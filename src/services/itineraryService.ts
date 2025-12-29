@@ -1,0 +1,124 @@
+// mobile/src/services/itineraryService.ts
+import api from './api';
+import { Itinerary } from '../types';
+
+interface PaginationParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  order?: 'asc' | 'desc';
+}
+
+interface PaginatedResponse {
+  itineraries: Itinerary[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
+export const itineraryService = {
+  async getAll(params?: PaginationParams): Promise<Itinerary[] | PaginatedResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params?.order) queryParams.append('order', params.order);
+    
+    const response = await api.get(`/roteiros?${queryParams.toString()}`);
+    
+    // Se tem paginação na resposta, retornar objeto paginado
+    if (response.data.pagination) {
+      return response.data as PaginatedResponse;
+    }
+    
+    // Senão, retornar array simples (backward compatibility)
+    return Array.isArray(response.data) ? response.data : response.data.itineraries;
+  },
+
+  async getById(id: string): Promise<Itinerary> {
+    const response = await api.get(`/roteiros/${id}`);
+    return response.data;
+  },
+
+  async create(data: Partial<Itinerary>): Promise<Itinerary> {
+    const response = await api.post('/roteiros', data);
+    return response.data.itinerary;
+  },
+
+  async generateWithAI(data: {
+    destination: { city: string; country: string };
+    startDate: string;
+    endDate: string;
+    budget?: { level: string; currency: string };
+    preferences?: any;
+  }): Promise<Itinerary> {
+    const response = await api.post('/roteiros/generate', data);
+    return response.data.itinerary;
+  },
+
+  async update(id: string, data: Partial<Itinerary>): Promise<Itinerary> {
+    const response = await api.put(`/roteiros/${id}`, data);
+    return response.data.itinerary;
+  },
+
+  async delete(id: string): Promise<void> {
+    await api.delete(`/roteiros/${id}`);
+  },
+
+  async duplicate(id: string): Promise<Itinerary> {
+    const response = await api.post(`/roteiros/${id}/duplicate`);
+    return response.data.itinerary;
+  },
+
+  async addCollaborator(id: string, email: string, permission: 'view' | 'edit'): Promise<Itinerary> {
+    const response = await api.post(`/roteiros/${id}/collaborators`, {
+      email,
+      permission,
+    });
+    return response.data.itinerary;
+  },
+
+  async removeCollaborator(id: string, collaboratorId: string): Promise<Itinerary> {
+    const response = await api.delete(`/roteiros/${id}/collaborators/${collaboratorId}`);
+    return response.data.itinerary;
+  },
+
+  async addRating(
+    id: string,
+    data: { score: number; comment?: string; photos?: string[] }
+  ): Promise<Itinerary> {
+    const response = await api.post(`/roteiros/${id}/rating`, data);
+    return response.data;
+  },
+
+  async updateRating(
+    id: string,
+    data: { score?: number; comment?: string; photos?: string[] }
+  ): Promise<Itinerary> {
+    const response = await api.put(`/roteiros/${id}/rating`, data);
+    return response.data;
+  },
+
+  async deleteRating(id: string): Promise<void> {
+    await api.delete(`/roteiros/${id}/rating`);
+  },
+
+  async generateShareLink(id: string): Promise<{ shareLink: string; fullUrl: string }> {
+    const response = await api.post(`/roteiros/${id}/share`);
+    return response.data;
+  },
+
+  async revokeShareLink(id: string): Promise<void> {
+    await api.delete(`/roteiros/${id}/share`);
+  },
+
+  async getSharedItinerary(shareId: string): Promise<Itinerary> {
+    const response = await api.get(`/shared/${shareId}`);
+    return response.data;
+  },
+};

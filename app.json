@@ -1,30 +1,67 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Guia do Aventureiro",
+    "slug": "guia-aventureiro",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "scheme": "guiaaventureiro",
+    "userInterfaceStyle": "automatic",
+    "description": "Planeje suas viagens com Inteligência Artificial. Roteiros personalizados, controle de orçamento e muito mais!",
+    "privacy": "public",
+    "platforms": ["ios", "android"],
+    "primaryColor": "#005A8D",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#005A8D"
     },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.guiaaventureiro.app",
+      "supportsTablet": true,
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Permitir acesso à câmera para tirar fotos dos seus roteiros.",
+        "NSPhotoLibraryUsageDescription": "Permitir acesso à galeria para adicionar fotos aos roteiros.",
+        "NSLocationWhenInUseUsageDescription": "Usar sua localização para sugerir destinos próximos."
+      }
     },
     "android": {
+      "package": "com.guiaaventureiro.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#005A8D"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permitir acesso à localização para sugerir destinos próximos."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "SEU_PROJECT_ID_AQUI"
+      }
     }
   }
 }
