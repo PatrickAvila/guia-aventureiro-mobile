@@ -7,8 +7,8 @@ const ENV = {
     googleMapsKey: 'AIzaSyDJERNmmT8x4AnEKjQEFHSTmSvMBwgTi0o', // Substitua pela sua chave do Google Maps
   },
   prod: {
-    apiUrl: 'https://guia-aventureiro-api.onrender.com/api',
-    googleMapsKey: 'sua-chave-maps',
+    apiUrl: 'https://guia-aventureiro-backend.onrender.com/api',
+    googleMapsKey: 'AIzaSyDJERNmmT8x4AnEKjQEFHSTmSvMBwgTi0o',
   },
 };
 
