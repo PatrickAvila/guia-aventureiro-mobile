@@ -13,10 +13,8 @@ const ENV = {
 };
 
 const getEnvVars = () => {
-  if (__DEV__) {
-    return ENV.dev;
-  }
-  return ENV.prod;
+  // return ENV.dev; // Remova ou comente esta linha
+  return ENV.prod; // Force sempre produção para testar
 };
 
 const env = getEnvVars();
