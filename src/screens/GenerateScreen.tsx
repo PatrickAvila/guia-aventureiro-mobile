@@ -1,3 +1,4 @@
+import { formatBRL } from '../components/Input';
 // mobile/src/screens/GenerateScreen.tsx
 import React, { useState, useCallback } from 'react';
 import {

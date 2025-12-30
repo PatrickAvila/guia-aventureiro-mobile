@@ -23,6 +23,12 @@ import { RatingStars } from '../components/RatingStars';
 import { RatingModal } from '../components/RatingModal';
 import { ShareModal } from '../components/ShareModal';
 import { BudgetTracker } from '../components/BudgetTracker';
+// Utilitário para formatar valores em Real brasileiro
+function formatBRL(value: number | string) {
+  let num = typeof value === 'string' ? Number(value.toString().replace(/[^\d]/g, '')) / 100 : value;
+  if (isNaN(num)) num = 0;
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 import budgetService from '../services/budgetService';
 
 export const ItineraryDetailScreen = ({ route, navigation }: any) => {
@@ -379,8 +385,8 @@ export const ItineraryDetailScreen = ({ route, navigation }: any) => {
                     <Text style={[styles.activityLocation, { color: colors.textSecondary }]}>📍 {activity.location.name}</Text>
                   )}
                   <View style={styles.activityFooter}>
-                    <Text style={[styles.activityCost, { color: colors.primary }]}>
-                      R$ {activity.estimatedCost.toFixed(2)}
+                    <Text style={[styles.activityCost, { color: colors.primary }]}> 
+                      {formatBRL(activity.estimatedCost)}
                     </Text>
 
       <RatingModal

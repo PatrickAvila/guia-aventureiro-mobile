@@ -1,3 +1,4 @@
+import { formatBRL } from '../components/Input';
 // mobile/src/screens/ProfileScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -494,7 +495,12 @@ export const ProfileScreen = ({ navigation }: any) => {
         onRequestClose={() => setShowEditModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1, justifyContent: 'center' }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+          >
+            <View style={[styles.modalContent, { backgroundColor: colors.card }]}> 
             <Text style={[styles.modalTitle, { color: colors.text }]}>Editar Perfil</Text>
             
             <View style={styles.avatarSection}>
@@ -554,7 +560,12 @@ export const ProfileScreen = ({ navigation }: any) => {
         onRequestClose={() => setShowPasswordModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1, justifyContent: 'center' }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+          >
+            <View style={[styles.modalContent, { backgroundColor: colors.card }]}> 
             <Text style={[styles.modalTitle, { color: colors.text }]}>Alterar Senha</Text>
             
             <Text style={[styles.label, { color: colors.textSecondary }]}>Senha Atual</Text>
@@ -619,7 +630,12 @@ export const ProfileScreen = ({ navigation }: any) => {
         onRequestClose={() => setShowPreferencesModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContentLarge, { backgroundColor: colors.card }]}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1, justifyContent: 'center' }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+          >
+            <View style={[styles.modalContentLarge, { backgroundColor: colors.card }]}> 
             <Text style={[styles.modalTitle, { color: colors.text }]}>Preferências de Viagem</Text>
             <Text style={[styles.scrollHint, { color: colors.textSecondary }]}>↓ Role para ver todas as opções ↓</Text>
             
@@ -787,7 +803,12 @@ export const ProfileScreen = ({ navigation }: any) => {
         onRequestClose={() => setShowShareModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1, justifyContent: 'center' }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+          >
+            <View style={[styles.modalContent, { backgroundColor: colors.card }]}> 
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>Compartilhar Perfil</Text>
               <TouchableOpacity onPress={() => setShowShareModal(false)} style={styles.closeButton}>
@@ -876,7 +897,12 @@ export const ProfileScreen = ({ navigation }: any) => {
         onRequestClose={() => setShowSettingsModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1, justifyContent: 'center' }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+          >
+            <View style={[styles.modalContent, { backgroundColor: colors.card }]}> 
             <Text style={[styles.modalTitle, { color: colors.text }]}>Dados e Armazenamento</Text>
             
             <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>

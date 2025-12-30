@@ -12,6 +12,19 @@ import {
   Alert,
 } from 'react-native';
 import { useColors } from '../hooks/useColors';
+// Função utilitária para formatar valor como Real brasileiro
+function formatBRL(value: number | string) {
+  let num = typeof value === 'string' ? Number(value.toString().replace(/[^\d]/g, '')) / 100 : value;
+  if (isNaN(num)) num = 0;
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+// Função para aplicar máscara no input
+function maskBRLInput(text: string) {
+  const cleaned = text.replace(/\D/g, '');
+  const num = Number(cleaned) / 100;
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 import { showAlert } from './CustomAlert';
 
 interface Expense {
@@ -86,7 +99,7 @@ export const BudgetTracker: React.FC<BudgetTrackerProps> = ({
       return;
     }
 
-    const numAmount = parseFloat(amount);
+    const numAmount = Number(amount.replace(/[^\d]/g, '')) / 100;
     if (isNaN(numAmount) || numAmount <= 0) {
       showAlert('Atenção', 'Valor inválido');
       return;
@@ -175,26 +188,26 @@ export const BudgetTracker: React.FC<BudgetTrackerProps> = ({
           <View style={styles.valueItem}>
             <Text style={[styles.valueLabel, { color: colors.textSecondary }]}>Estimado</Text>
             <Text style={[styles.valueAmount, { color: colors.text }]}>
-              {currency} {budgetEstimated.toFixed(2)}
+              {formatBRL(budgetEstimated)}
             </Text>
           </View>
           <View style={styles.valueItem}>
             <Text style={[styles.valueLabel, { color: colors.textSecondary }]}>Gasto</Text>
             <Text style={[styles.valueAmount, { color: getProgressColor() }]}>
-              {currency} {budgetSpent.toFixed(2)}
+              {formatBRL(budgetSpent)}
             </Text>
           </View>
           <View style={styles.valueItem}>
             <Text style={[styles.valueLabel, { color: colors.textSecondary }]}>Restante</Text>
             <Text style={[styles.valueAmount, { color: isOverBudget ? colors.error : colors.success }]}>
-              {currency} {Math.abs(remaining).toFixed(2)}
+              {formatBRL(Math.abs(remaining))}
             </Text>
           </View>
         </View>
 
         {isOverBudget && (
-          <Text style={[styles.warningText, { color: colors.error }]}>
-            ⚠️ Você excedeu o orçamento em {currency} {Math.abs(remaining).toFixed(2)}
+          <Text style={[styles.warningText, { color: colors.error }]}> 
+            ⚠️ Você excedeu o orçamento em {formatBRL(Math.abs(remaining))}
           </Text>
         )}
       </View>
@@ -223,7 +236,7 @@ export const BudgetTracker: React.FC<BudgetTrackerProps> = ({
                 </View>
                 <View style={styles.expenseRight}>
                   <Text style={[styles.expenseAmount, { color: colors.text }]}>
-                    {currency} {expense.amount.toFixed(2)}
+                    {formatBRL(expense.amount)}
                   </Text>
                   <TouchableOpacity onPress={() => handleDeleteExpense(expense)}>
                     <Text style={[styles.deleteButton, { color: colors.error }]}>✕</Text>
@@ -243,88 +256,96 @@ export const BudgetTracker: React.FC<BudgetTrackerProps> = ({
       {/* Modal Adicionar Gasto */}
       <Modal visible={showAddModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Adicionar Gasto</Text>
-              <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                <Text style={[styles.closeButton, { color: colors.textSecondary }]}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalBody}>
-              {/* Seleção de Categoria */}
-              <Text style={[styles.label, { color: colors.text }]}>Categoria</Text>
-              <View style={styles.categoriesGrid}>
-                {CATEGORIES.map(cat => (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[
-                      styles.categoryChip,
-                      {
-                        backgroundColor: selectedCategory === cat.id ? colors.primary : colors.background,
-                        borderColor: selectedCategory === cat.id ? colors.primary : colors.border,
-                      },
-                    ]}
-                    onPress={() => setSelectedCategory(cat.id)}
-                  >
-                    <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                    <Text
-                      style={[
-                        styles.categoryLabel,
-                        { color: selectedCategory === cat.id ? '#FFFFFF' : colors.text },
-                      ]}
-                    >
-                      {cat.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1, justifyContent: 'flex-end' }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+          >
+            <View style={[styles.modalContent, { backgroundColor: colors.card }]}> 
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}> 
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Adicionar Gasto</Text>
+                <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                  <Text style={[styles.closeButton, { color: colors.textSecondary }]}>✕</Text>
+                </TouchableOpacity>
               </View>
 
-              {/* Descrição */}
-              <Text style={[styles.label, { color: colors.text }]}>Descrição</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="Ex: Jantar no restaurante X"
-                placeholderTextColor={colors.textSecondary}
-                value={description}
-                onChangeText={setDescription}
-                maxLength={200}
-              />
+              <ScrollView style={styles.modalBody}>
+                {/* Seleção de Categoria */}
+                <Text style={[styles.label, { color: colors.text }]}>Categoria</Text>
+                <View style={styles.categoriesGrid}>
+                  {CATEGORIES.map(cat => (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        styles.categoryChip,
+                        {
+                          backgroundColor: selectedCategory === cat.id ? colors.primary : colors.background,
+                          borderColor: selectedCategory === cat.id ? colors.primary : colors.border,
+                        },
+                      ]}
+                      onPress={() => setSelectedCategory(cat.id)}
+                    >
+                      <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                      <Text
+                        style={[
+                          styles.categoryLabel,
+                          { color: selectedCategory === cat.id ? '#FFFFFF' : colors.text },
+                        ]}
+                      >
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
 
-              {/* Valor */}
-              <Text style={[styles.label, { color: colors.text }]}>Valor ({currency})</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="0.00"
-                placeholderTextColor={colors.textSecondary}
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="decimal-pad"
-              />
-            </ScrollView>
+                {/* Descrição */}
+                <Text style={[styles.label, { color: colors.text }]}>Descrição</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Ex: Jantar no restaurante X"
+                  placeholderTextColor={colors.textSecondary}
+                  value={description}
+                  onChangeText={setDescription}
+                  maxLength={200}
+                />
 
-            {/* Botões */}
-            <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton, { backgroundColor: colors.background }]}
-                onPress={() => setShowAddModal(false)}
-                disabled={loading}
-              >
-                <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.submitButton, { backgroundColor: colors.primary }]}
-                onPress={handleAddExpense}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Adicionar</Text>
-                )}
-              </TouchableOpacity>
+                {/* Valor */}
+                <Text style={[styles.label, { color: colors.text }]}>Valor ({currency})</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="R$ 0,00"
+                  placeholderTextColor={colors.textSecondary}
+                  value={amount}
+                  onChangeText={text => setAmount(maskBRLInput(text))}
+                  keyboardType="numeric"
+                  maxLength={20}
+                  returnKeyType="done"
+                />
+              </ScrollView>
+
+              {/* Botões */}
+              <View style={[styles.modalFooter, { borderTopColor: colors.border }]}> 
+                <TouchableOpacity
+                  style={[styles.button, styles.cancelButton, { backgroundColor: colors.background }]}
+                  onPress={() => setShowAddModal(false)}
+                  disabled={loading}
+                >
+                  <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.submitButton, { backgroundColor: colors.primary }]}
+                  onPress={handleAddExpense}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.submitButtonText}>Adicionar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </View>

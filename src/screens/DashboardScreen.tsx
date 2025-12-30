@@ -1,3 +1,5 @@
+// Importa utilitário de formatação BRL
+import { formatBRL } from '../components/Input';
 // mobile/src/screens/DashboardScreen.tsx
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
@@ -342,12 +344,17 @@ export const DashboardScreen = ({ navigation }: any) => {
         animationType="fade"
         onRequestClose={() => setShowSortModal(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowSortModal(false)}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1, justifyContent: 'center' }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
         >
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowSortModal(false)}
+          >
+            <View style={[styles.modalContent, { backgroundColor: colors.card }]}> 
             <Text style={[styles.modalTitle, { color: colors.text }]}>Ordenar por</Text>
             {sortOptions.map((option) => (
               <TouchableOpacity
@@ -377,7 +384,8 @@ export const DashboardScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             ))}
           </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Toast

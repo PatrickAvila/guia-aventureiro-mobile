@@ -1,3 +1,5 @@
+// Importa utilitário de formatação BRL
+import { formatBRL } from './Input';
 // mobile/src/components/RatingModal.tsx
 import React, { useState, useEffect } from 'react';
 import {
@@ -105,146 +107,152 @@ export const RatingModal: React.FC<RatingModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={[styles.modal, { backgroundColor: colors.card }]}>
-          <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.title, { color: colors.text }]}>
-              {existingRating ? 'Editar Avaliação' : 'Avaliar Viagem'}
-            </Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={[styles.closeButton, { color: colors.textSecondary }]}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Avaliação com Estrelas */}
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>Como foi sua experiência?</Text>
-              <RatingStars
-                rating={score}
-                onRatingChange={setScore}
-                size={40}
-                editable
-                showLabel
-              />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1, justifyContent: 'flex-end' }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        >
+          <View style={[styles.modal, { backgroundColor: colors.card }]}> 
+            <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+              <Text style={[styles.title, { color: colors.text }]}> 
+                {existingRating ? 'Editar Avaliação' : 'Avaliar Viagem'}
+              </Text>
+              <TouchableOpacity onPress={onClose}>
+                <Text style={[styles.closeButton, { color: colors.textSecondary }]}>✕</Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Highlights */}
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>O que você mais gostou?</Text>
-              <View style={styles.highlightsContainer}>
-                {HIGHLIGHT_OPTIONS.map((option) => {
-                  const isSelected = highlights.includes(option.id);
-                  return (
-                    <Pressable
-                      key={option.id}
-                      style={[
-                        styles.highlightChip,
-                        { 
-                          backgroundColor: isSelected ? colors.primary : colors.background,
-                          borderColor: isSelected ? colors.primary : colors.border 
-                        }
-                      ]}
-                      onPress={() => toggleHighlight(option.id)}
-                    >
-                      <Text style={styles.highlightIcon}>{option.icon}</Text>
-                      <Text style={[
-                        styles.highlightLabel,
-                        { color: isSelected ? '#FFFFFF' : colors.text }
-                      ]}>
-                        {option.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+              {/* Avaliação com Estrelas */}
+              <View style={styles.section}>
+                <Text style={[styles.label, { color: colors.text }]}>Como foi sua experiência?</Text>
+                <RatingStars
+                  rating={score}
+                  onRatingChange={setScore}
+                  size={40}
+                  editable
+                  showLabel
+                />
               </View>
-            </View>
 
-            {/* Recomendação */}
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>Você recomendaria este roteiro?</Text>
-              <View style={styles.recommendContainer}>
-                <Pressable
-                  style={[
-                    styles.recommendButton,
-                    { 
-                      backgroundColor: wouldRecommend ? colors.success : colors.background,
-                      borderColor: wouldRecommend ? colors.success : colors.border 
-                    }
-                  ]}
-                  onPress={() => setWouldRecommend(true)}
-                >
-                  <Text style={[styles.recommendText, { color: wouldRecommend ? '#FFFFFF' : colors.text }]}>
-                    👍 Sim
-                  </Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.recommendButton,
-                    { 
-                      backgroundColor: !wouldRecommend ? colors.error : colors.background,
-                      borderColor: !wouldRecommend ? colors.error : colors.border 
-                    }
-                  ]}
-                  onPress={() => setWouldRecommend(false)}
-                >
-                  <Text style={[styles.recommendText, { color: !wouldRecommend ? '#FFFFFF' : colors.text }]}>
-                    👎 Não
-                  </Text>
-                </Pressable>
+              {/* Highlights */}
+              <View style={styles.section}>
+                <Text style={[styles.label, { color: colors.text }]}>O que você mais gostou?</Text>
+                <View style={styles.highlightsContainer}>
+                  {HIGHLIGHT_OPTIONS.map((option) => {
+                    const isSelected = highlights.includes(option.id);
+                    return (
+                      <Pressable
+                        key={option.id}
+                        style={[
+                          styles.highlightChip,
+                          { 
+                            backgroundColor: isSelected ? colors.primary : colors.background,
+                            borderColor: isSelected ? colors.primary : colors.border 
+                          }
+                        ]}
+                        onPress={() => toggleHighlight(option.id)}
+                      >
+                        <Text style={styles.highlightIcon}>{option.icon}</Text>
+                        <Text style={[
+                          styles.highlightLabel,
+                          { color: isSelected ? '#FFFFFF' : colors.text }
+                        ]}>
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
+
+              {/* Recomendação */}
+              <View style={styles.section}>
+                <Text style={[styles.label, { color: colors.text }]}>Você recomendaria este roteiro?</Text>
+                <View style={styles.recommendContainer}>
+                  <Pressable
+                    style={[
+                      styles.recommendButton,
+                      { 
+                        backgroundColor: wouldRecommend ? colors.success : colors.background,
+                        borderColor: wouldRecommend ? colors.success : colors.border 
+                      }
+                    ]}
+                    onPress={() => setWouldRecommend(true)}
+                  >
+                    <Text style={[styles.recommendText, { color: wouldRecommend ? '#FFFFFF' : colors.text }]}>
+                      👍 Sim
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.recommendButton,
+                      { 
+                        backgroundColor: !wouldRecommend ? colors.error : colors.background,
+                        borderColor: !wouldRecommend ? colors.error : colors.border 
+                      }
+                    ]}
+                    onPress={() => setWouldRecommend(false)}
+                  >
+                    <Text style={[styles.recommendText, { color: !wouldRecommend ? '#FFFFFF' : colors.text }]}>
+                      👎 Não
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.section}>
+                <Text style={[styles.label, { color: colors.text }]}>Comentário (opcional)</Text>
+                <TextInput
+                  style={[styles.textArea, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Conte como foi sua viagem, dicas, lugares favoritos..."
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={6}
+                  maxLength={1000}
+                  value={comment}
+                  onChangeText={setComment}
+                  textAlignVertical="top"
+                />
+                <Text style={[styles.charCount, { color: colors.textSecondary }]}>{comment.length}/1000</Text>
+              </View>
+
+              <View style={styles.section}>
+                <Text style={[styles.label, { color: colors.text }]}>Fotos da viagem (opcional)</Text>
+                <PhotoPicker
+                  onPhotosSelected={setPhotos}
+                  maxPhotos={6}
+                  itineraryId={itineraryId}
+                  existingPhotos={photos}
+                />
+              </View>
+            </ScrollView>
+
+            <View style={[styles.footer, { borderTopColor: colors.border }]}> 
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton, { backgroundColor: colors.background }]}
+                onPress={onClose}
+                disabled={loading}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.button, styles.submitButton, { backgroundColor: colors.primary }, loading && styles.disabledButton]}
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.submitButtonText}>
+                    {existingRating ? 'Atualizar' : 'Publicar'}
+                  </Text>
+                )}
+              </TouchableOpacity>
             </View>
-
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>Comentário (opcional)</Text>
-              <TextInput
-                style={[styles.textArea, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="Conte como foi sua viagem, dicas, lugares favoritos..."
-                placeholderTextColor={colors.textSecondary}
-                multiline
-                numberOfLines={6}
-                maxLength={1000}
-                value={comment}
-                onChangeText={setComment}
-                textAlignVertical="top"
-              />
-              <Text style={[styles.charCount, { color: colors.textSecondary }]}>{comment.length}/1000</Text>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>Fotos da viagem (opcional)</Text>
-              <PhotoPicker
-                onPhotosSelected={setPhotos}
-                maxPhotos={6}
-                itineraryId={itineraryId}
-                existingPhotos={photos}
-              />
-            </View>
-          </ScrollView>
-
-          <View style={[styles.footer, { borderTopColor: colors.border }]}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton, { backgroundColor: colors.background }]}
-              onPress={onClose}
-              disabled={loading}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancelar</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.submitButton, { backgroundColor: colors.primary }, loading && styles.disabledButton]}
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.submitButtonText}>
-                  {existingRating ? 'Atualizar' : 'Publicar'}
-                </Text>
-              )}
-            </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );

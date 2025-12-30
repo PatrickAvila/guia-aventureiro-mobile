@@ -119,72 +119,78 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Compartilhar Roteiro</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.closeButton}>✕</Text>
-            </TouchableOpacity>
-          </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1, justifyContent: 'flex-end' }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        >
+          <View style={styles.modal}>
+            <View style={styles.header}>
+              <Text style={styles.title}>Compartilhar Roteiro</Text>
+              <TouchableOpacity onPress={onClose}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
-          <View style={styles.content}>
-            <Text style={styles.itineraryTitle}>{itineraryTitle}</Text>
+            <View style={styles.content}>
+              <Text style={styles.itineraryTitle}>{itineraryTitle}</Text>
 
-            {shareLink ? (
-              <>
-                <View style={styles.linkContainer}>
-                  <Text style={styles.linkLabel}>Link de compartilhamento:</Text>
-                  <View style={styles.linkBox}>
-                    <Text style={styles.linkText} numberOfLines={1}>
-                      {shareLink}
-                    </Text>
+              {shareLink ? (
+                <>
+                  <View style={styles.linkContainer}>
+                    <Text style={styles.linkLabel}>Link de compartilhamento:</Text>
+                    <View style={styles.linkBox}>
+                      <Text style={styles.linkText} numberOfLines={1}>
+                        {shareLink}
+                      </Text>
+                    </View>
                   </View>
-                </View>
 
-                <TouchableOpacity style={styles.primaryButton} onPress={handleCopyLink}>
-                  <Text style={styles.primaryButtonText}>📋 Copiar Link</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity style={styles.primaryButton} onPress={handleCopyLink}>
+                    <Text style={styles.primaryButtonText}>📋 Copiar Link</Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity style={styles.secondaryButton} onPress={handleShareNative}>
-                  <Text style={styles.secondaryButtonText}>📤 Compartilhar</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity style={styles.secondaryButton} onPress={handleShareNative}>
+                    <Text style={styles.secondaryButtonText}>📤 Compartilhar</Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity style={styles.whatsappButton} onPress={handleShareWhatsApp}>
-                  <Text style={styles.whatsappButtonText}>💬 Enviar no WhatsApp</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity style={styles.whatsappButton} onPress={handleShareWhatsApp}>
+                    <Text style={styles.whatsappButtonText}>💬 Enviar no WhatsApp</Text>
+                  </TouchableOpacity>
 
-                <View style={styles.divider} />
+                  <View style={styles.divider} />
 
-                <TouchableOpacity
-                  style={styles.dangerButton}
-                  onPress={handleRevokeLink}
-                  disabled={loading}
-                >
-                  <Text style={styles.dangerButtonText}>🔒 Tornar Privado</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <Text style={styles.description}>
-                  Gere um link para compartilhar este roteiro com amigos e familiares. Qualquer
-                  pessoa com o link poderá visualizar.
-                </Text>
+                  <TouchableOpacity
+                    style={styles.dangerButton}
+                    onPress={handleRevokeLink}
+                    disabled={loading}
+                  >
+                    <Text style={styles.dangerButtonText}>🔒 Tornar Privado</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.description}>
+                    Gere um link para compartilhar este roteiro com amigos e familiares. Qualquer
+                    pessoa com o link poderá visualizar.
+                  </Text>
 
-                <TouchableOpacity
-                  style={[styles.primaryButton, loading && styles.disabledButton]}
-                  onPress={handleGenerateLink}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : (
-                    <Text style={styles.primaryButtonText}>🔗 Gerar Link</Text>
-                  )}
-                </TouchableOpacity>
-              </>
-            )}
+                  <TouchableOpacity
+                    style={[styles.primaryButton, loading && styles.disabledButton]}
+                    onPress={handleGenerateLink}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Text style={styles.primaryButtonText}>🔗 Gerar Link</Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );

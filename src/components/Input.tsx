@@ -1,3 +1,9 @@
+// Utilitário para formatar valores em Real brasileiro
+export function formatBRL(value: number | string) {
+  let num = typeof value === 'string' ? Number(value.toString().replace(/[^\d]/g, '')) / 100 : value;
+  if (isNaN(num)) num = 0;
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 import React from 'react';
 import {
   TextInput,
