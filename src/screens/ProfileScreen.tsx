@@ -501,54 +501,52 @@ export const ProfileScreen = ({ navigation }: any) => {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
           >
             <View style={[styles.modalContent, { backgroundColor: colors.card }]}> 
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Editar Perfil</Text>
-            
-            <View style={styles.avatarSection}>
-              <View style={[styles.modalAvatar, { backgroundColor: colors.primary }]}>
-                {newAvatar ? (
-                  <Image source={{ uri: newAvatar }} style={styles.avatarImage} />
-                ) : (
-                  <Text style={[styles.avatarText, { color: colors.white }]}>{newName.charAt(0).toUpperCase() || user?.name.charAt(0).toUpperCase()}</Text>
-                )}
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Editar Perfil</Text>
+              <View style={styles.avatarSection}>
+                <View style={[styles.modalAvatar, { backgroundColor: colors.primary }]}> 
+                  {newAvatar ? (
+                    <Image source={{ uri: newAvatar }} style={styles.avatarImage} />
+                  ) : (
+                    <Text style={[styles.avatarText, { color: colors.white }]}>{newName.charAt(0).toUpperCase() || user?.name.charAt(0).toUpperCase()}</Text>
+                  )}
+                </View>
+                <TouchableOpacity 
+                  style={[styles.changePhotoButton, { backgroundColor: colors.primary }]}
+                  onPress={handleSelectAvatar}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 12 }}>Alterar Foto</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity 
-                style={[styles.changePhotoButton, { backgroundColor: colors.primary }]}
-                onPress={handleSelectAvatar}
-              >
-                <Text style={{ color: '#FFFFFF', fontSize: 12 }}>Alterar Foto</Text>
-              </TouchableOpacity>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Nome</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                value={newName}
+                onChangeText={setNewName}
+                placeholder="Digite seu nome"
+                placeholderTextColor={colors.textSecondary}
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, { backgroundColor: colors.backgroundLight }]}
+                  onPress={() => setShowEditModal(false)}
+                  disabled={savingProfile}
+                >
+                  <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonPrimary, { backgroundColor: colors.primary }]}
+                  onPress={handleSaveProfile}
+                  disabled={savingProfile}
+                >
+                  {savingProfile ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Salvar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Nome</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-              value={newName}
-              onChangeText={setNewName}
-              placeholder="Digite seu nome"
-              placeholderTextColor={colors.textSecondary}
-            />
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: colors.backgroundLight }]}
-                onPress={() => setShowEditModal(false)}
-                disabled={savingProfile}
-              >
-                <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonPrimary, { backgroundColor: colors.primary }]}
-                onPress={handleSaveProfile}
-                disabled={savingProfile}
-              >
-                {savingProfile ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Salvar</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
