@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { photoService } from '../services/photoService';
 import { useColors } from '../hooks/useColors';
@@ -54,34 +55,52 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
   };
 
   const uploadPhoto = async (uri: string) => {
-    setUploading(true);
-    const result = await photoService.uploadPhoto(uri, itineraryId);
-    setUploading(false);
+    try {
+      setUploading(true);
+      const result = await photoService.uploadPhoto(uri, itineraryId);
+      setUploading(false);
 
-    if (result && typeof result === 'object' && 'url' in result) {
-      const newPhotos = [...photos, result.url];
-      setPhotos(newPhotos);
-      onPhotosSelected?.(newPhotos);
+      if (result && typeof result === 'string') {
+        const newPhotos = [...photos, result];
+        setPhotos(newPhotos);
+        onPhotosSelected?.(newPhotos);
+        Alert.alert('Sucesso', 'Foto adicionada com sucesso!');
+      } else {
+        Alert.alert('Erro', 'Não foi possível fazer upload da foto. Tente novamente.');
+      }
+    } catch (error) {
+      setUploading(false);
+      console.error('Erro ao fazer upload:', error);
+      Alert.alert('Erro', 'Ocorreu um erro ao fazer upload da foto. Verifique sua conexão e tente novamente.');
     }
   };
 
   const uploadPhotos = async (uris: string[]) => {
-    setUploading(true);
-    const results = await photoService.uploadMultiplePhotos(
-      uris,
-      itineraryId,
-      (current, total) => {
-        setUploadProgress({ current, total });
-      }
-    );
-    setUploading(false);
-    setUploadProgress({ current: 0, total: 0 });
+    try {
+      setUploading(true);
+      const results = await photoService.uploadMultiplePhotos(
+        uris,
+        itineraryId,
+        (current, total) => {
+          setUploadProgress({ current, total });
+        }
+      );
+      setUploading(false);
+      setUploadProgress({ current: 0, total: 0 });
 
-    if (results.length > 0) {
-      const urls = results.map((r) => r.url);
-      const newPhotos = [...photos, ...urls];
-      setPhotos(newPhotos);
-      onPhotosSelected?.(newPhotos);
+      if (results.length > 0) {
+        const newPhotos = [...photos, ...results];
+        setPhotos(newPhotos);
+        onPhotosSelected?.(newPhotos);
+        Alert.alert('Sucesso', `${results.length} foto(s) adicionada(s) com sucesso!`);
+      } else {
+        Alert.alert('Erro', 'Não foi possível fazer upload das fotos. Tente novamente.');
+      }
+    } catch (error) {
+      setUploading(false);
+      setUploadProgress({ current: 0, total: 0 });
+      console.error('Erro ao fazer upload:', error);
+      Alert.alert('Erro', 'Ocorreu um erro ao fazer upload das fotos. Verifique sua conexão e tente novamente.');
     }
   };
 

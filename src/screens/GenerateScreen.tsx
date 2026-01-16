@@ -8,8 +8,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Keyboard,
-  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -223,159 +223,153 @@ export const GenerateScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={{ flex: 1 }}>
-          <ScrollView 
-            style={styles.scrollView} 
-            contentContainerStyle={styles.content}
-            keyboardShouldPersistTaps="always"
-          >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          removeClippedSubviews={false}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>✨ Criar Roteiro com IA</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Preencha as informações e deixe a IA criar um roteiro personalizado para você!
-        </Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Destino</Text>
-        <PlaceAutocomplete
-          key={resetKey}
-          label="Buscar destino"
-          placeholder="Digite uma cidade... (Ex: Paris, Rio de Janeiro)"
-          onPlaceSelected={(details) => {
-            setCity(details.city);
-            setCountry(details.country);
-          }}
-        />
-        
-        {/* Campos somente leitura com informações do local selecionado */}
-        <View style={styles.manualInputs}>
-          <Input
-            label="Cidade"
-            placeholder="Selecione um destino acima"
-            value={city}
-            onChangeText={setCity}
-            containerStyle={styles.halfInput}
-            editable={false}
-          />
-          <Input
-            label="País"
-            placeholder="Selecione um destino acima"
-            value={country}
-            onChangeText={setCountry}
-            containerStyle={styles.halfInput}
-            editable={false}
-          />
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Datas</Text>
-        <DateInput
-          label="Data de início"
-          placeholder="DD/MM/AAAA"
-          value={startDate}
-          onChangeText={handleStartDateChange}
-          error={dateErrors.start}
-        />
-        <DateInput
-          label="Data de término"
-          placeholder="DD/MM/AAAA"
-          value={endDate}
-          onChangeText={setEndDate}
-          error={dateErrors.end}
-        />
-
-        {/* Preview de duração */}
-        {duration !== null && duration > 0 && !dateErrors.start && !dateErrors.end && (
-          <View style={[styles.durationPreview, { backgroundColor: colors.primary + '15' }]}>
-            <Text style={styles.durationIcon}>📅</Text>
-            <View style={styles.durationTextContainer}>
-              <Text style={[styles.durationText, { color: colors.primary }]}>
-                {duration} {duration === 1 ? 'dia' : 'dias'} de viagem
-              </Text>
-              {startDate && endDate && validateDate(startDate) && validateDate(endDate) && (
-                <Text style={[styles.durationDates, { color: colors.textSecondary }]}>
-                  {format(parse(startDate, 'dd/MM/yyyy', new Date()), "dd 'de' MMM", { locale: ptBR })} até{' '}
-                  {format(parse(endDate, 'dd/MM/yyyy', new Date()), "dd 'de' MMM 'de' yyyy", { locale: ptBR })}
-                </Text>
-              )}
+            <Text style={[styles.title, { color: colors.text }]}>✨ Criar Roteiro com IA</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Preencha as informações e deixe a IA criar um roteiro personalizado para você!</Text>
+          </View>
+          {/* Conteúdo do formulário abaixo */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Destino</Text>
+            <PlaceAutocomplete
+              key={resetKey}
+              label="Buscar destino"
+              placeholder="Digite uma cidade... (Ex: Paris, Rio de Janeiro)"
+              onPlaceSelected={(details) => {
+                setCity(details.city);
+                setCountry(details.country);
+              }}
+            />
+            <View style={styles.manualInputs}>
+              <Input
+                    label="Cidade"
+                    placeholder="Selecione um destino acima"
+                    value={city}
+                    onChangeText={setCity}
+                containerStyle={styles.halfInput}
+                editable={false}
+              />
+              <Input
+                label="País"
+                placeholder="Selecione um destino acima"
+                value={country}
+                onChangeText={setCountry}
+                containerStyle={styles.halfInput}
+                editable={false}
+              />
             </View>
           </View>
-        )}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Orçamento</Text>
-        <View style={styles.optionsRow}>
-          {budgetOptions.map((option) => (
-            <TouchableOpacity
-              key={option.value}
-              style={[
-                styles.optionCard,
-                { backgroundColor: colors.card, borderColor: budgetLevel === option.value ? colors.primary : colors.border },
-                budgetLevel === option.value && { backgroundColor: colors.primary + '10' },
-              ]}
-              onPress={() => setBudgetLevel(option.value as any)}
-            >
-              <Text style={styles.optionIcon}>{option.icon}</Text>
-              <Text
-                style={[
-                  styles.optionLabel,
-                  { color: budgetLevel === option.value ? colors.primary : colors.textSecondary },
-                ]}
-              >
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Estilo de viagem</Text>
-        <View style={styles.optionsRow}>
-          {styleOptions.map((option) => (
-            <TouchableOpacity
-              key={option.value}
-              style={[
-                styles.optionCard,
-                { backgroundColor: colors.card, borderColor: travelStyle === option.value ? colors.primary : colors.border },
-                travelStyle === option.value && { backgroundColor: colors.primary + '10' },
-              ]}
-              onPress={() => setTravelStyle(option.value as any)}
-            >
-              <Text style={styles.optionIcon}>{option.icon}</Text>
-              <Text
-                style={[
-                  styles.optionLabel,
-                  { color: travelStyle === option.value ? colors.primary : colors.textSecondary },
-                ]}
-              >
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      <Button
-        title="Gerar roteiro com IA"
-        onPress={handleGenerate}
-        loading={loading}
-        style={styles.generateButton}
-      />
-
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        visible={toast.visible}
-        onHide={hideToast}
-      />
-          </ScrollView>
-        </View>
-      </TouchableWithoutFeedback>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Datas</Text>
+            <DateInput
+              label="Data de início"
+              placeholder="DD/MM/AAAA"
+              value={startDate}
+              onChangeText={handleStartDateChange}
+              error={dateErrors.start}
+            />
+            <DateInput
+              label="Data de término"
+              placeholder="DD/MM/AAAA"
+              value={endDate}
+              onChangeText={setEndDate}
+              error={dateErrors.end}
+            />
+            {/* Preview de duração */}
+            {duration !== null && duration > 0 && !dateErrors.start && !dateErrors.end && (
+              <View style={[styles.durationPreview, { backgroundColor: colors.primary + '15' }]}> 
+                <Text style={styles.durationIcon}>📅</Text>
+                <View style={styles.durationTextContainer}>
+                  <Text style={[styles.durationText, { color: colors.primary }]}> 
+                    {duration} {duration === 1 ? 'dia' : 'dias'} de viagem
+                  </Text>
+                  {startDate && endDate && validateDate(startDate) && validateDate(endDate) && (
+                    <Text style={[styles.durationDates, { color: colors.textSecondary }]}> 
+                      {format(parse(startDate, 'dd/MM/yyyy', new Date()), "dd 'de' MMM", { locale: ptBR })} até{' '}
+                      {format(parse(endDate, 'dd/MM/yyyy', new Date()), "dd 'de' MMM 'de' yyyy", { locale: ptBR })}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            )}
+          </View>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Orçamento</Text>
+            <View style={styles.optionsRow}>
+              {budgetOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.optionCard,
+                    { backgroundColor: colors.card, borderColor: budgetLevel === option.value ? colors.primary : colors.border },
+                    budgetLevel === option.value && { backgroundColor: colors.primary + '10' },
+                  ]}
+                  onPress={() => setBudgetLevel(option.value as any)}
+                >
+                  <Text style={styles.optionIcon}>{option.icon}</Text>
+                  <Text
+                    style={[
+                      styles.optionLabel,
+                      { color: budgetLevel === option.value ? colors.primary : colors.textSecondary },
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Estilo de viagem</Text>
+            <View style={styles.optionsRow}>
+              {styleOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.optionCard,
+                    { backgroundColor: colors.card, borderColor: travelStyle === option.value ? colors.primary : colors.border },
+                    travelStyle === option.value && { backgroundColor: colors.primary + '10' },
+                  ]}
+                  onPress={() => setTravelStyle(option.value as any)}
+                >
+                  <Text style={styles.optionIcon}>{option.icon}</Text>
+                  <Text
+                    style={[
+                      styles.optionLabel,
+                      { color: travelStyle === option.value ? colors.primary : colors.textSecondary },
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <Button
+            title="Gerar roteiro com IA"
+            onPress={handleGenerate}
+            loading={loading}
+            style={styles.generateButton}
+          />
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            visible={toast.visible}
+            onHide={hideToast}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -385,7 +379,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollView: {
-    flex: 1,
+    // flex: 1, // Removido para evitar conflito de rolagem
   },
   content: {
     padding: 20,

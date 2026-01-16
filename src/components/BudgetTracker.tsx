@@ -10,6 +10,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { useColors } from '../hooks/useColors';
 // Função utilitária para formatar valor como Real brasileiro

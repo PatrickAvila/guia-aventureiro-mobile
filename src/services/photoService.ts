@@ -142,6 +142,11 @@ class PhotoService {
 
       // Fazer upload
       const token = await AsyncStorage.getItem('accessToken');
+      console.log('📤 Fazendo upload para:', `${env.apiUrl}/upload`);
+      console.log('📤 URI da foto:', uri);
+      console.log('📤 Nome do arquivo:', filename);
+      console.log('📤 Tipo:', type);
+      
       const response = await fetch(`${env.apiUrl}/upload`, {
         method: 'POST',
         body: formData,
@@ -150,12 +155,16 @@ class PhotoService {
         },
       });
 
+      console.log('📥 Status da resposta:', response.status);
+      
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Erro do servidor:', errorData);
         throw new Error(errorData.message || 'Erro ao fazer upload da foto');
       }
 
       const data = await response.json();
+      console.log('✅ Upload concluído:', data);
       return data.url; // Retorna apenas a URL
     } catch (error: any) {
       console.error('Erro ao fazer upload:', error);
@@ -170,8 +179,8 @@ class PhotoService {
     uris: string[],
     itineraryId?: string,
     onProgress?: (current: number, total: number) => void
-  ): Promise<UploadResult[]> {
-    const results: UploadResult[] = [];
+  ): Promise<string[]> {
+    const results: string[] = [];
 
     for (let i = 0; i < uris.length; i++) {
       if (onProgress) {
@@ -179,7 +188,7 @@ class PhotoService {
       }
 
       const result = await this.uploadPhoto(uris[i], itineraryId);
-      if (result && typeof result === 'object') {
+      if (result && typeof result === 'string') {
         results.push(result);
       }
     }

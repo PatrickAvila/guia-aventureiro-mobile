@@ -23,15 +23,11 @@ export const authService = {
 
   async login(email: string, password: string) {
     try {
-      console.log('Tentando login com:', email);
-      console.log('API URL:', api.defaults.baseURL);
-      
       const response = await api.post('/auth/login', {
         email,
         password,
       });
 
-      console.log('Login bem-sucedido:', response.data);
       const { user, accessToken, refreshToken } = response.data;
 
       await AsyncStorage.setItem('accessToken', accessToken);
@@ -40,7 +36,6 @@ export const authService = {
 
       return { user, accessToken, refreshToken };
     } catch (error: any) {
-      console.error('Erro no login:', error.response?.data || error.message);
       throw error;
     }
   },
@@ -49,7 +44,7 @@ export const authService = {
     try {
       await api.post('/auth/logout');
     } catch (error) {
-      console.error('Erro ao fazer logout no servidor:', error);
+      // Ignorar erro no logout do servidor
     } finally {
       await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
     }

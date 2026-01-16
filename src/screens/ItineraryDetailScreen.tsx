@@ -86,7 +86,7 @@ export const ItineraryDetailScreen = ({ route, navigation }: any) => {
         isMounted = false;
         isLoadingRef.current = false;
       };
-    }, [id]) // Só recarrega se o ID mudar
+    }, []) // Recarrega sempre que a tela ganhar foco
   );
 
   const loadItinerary = useCallback(async () => {
@@ -99,7 +99,7 @@ export const ItineraryDetailScreen = ({ route, navigation }: any) => {
       console.error('❌ Erro ao recarregar roteiro:', error);
       showError('Não foi possível carregar o roteiro.');
     }
-  }, [id, showError]);
+  }, []);
 
   const handleDelete = async () => {
     console.log('🗑️ Botão de deletar clicado. ID:', id);
@@ -117,6 +117,7 @@ export const ItineraryDetailScreen = ({ route, navigation }: any) => {
               await itineraryService.delete(id);
               console.log('✅ Roteiro deletado com sucesso');
               success('Roteiro excluído com sucesso!');
+              // Removido callback onListChange. Dashboard recarrega via useFocusEffect.
               setTimeout(() => {
                 navigation.goBack();
               }, 500);
@@ -227,36 +228,38 @@ export const ItineraryDetailScreen = ({ route, navigation }: any) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
-      {/* Header fixo */}
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={[styles.backButtonText, { color: colors.primary }]}>‹</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-          {itinerary.title}
-        </Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => setShareModalVisible(true)} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>🔗</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('EditItinerary', { id: itinerary._id })}
-            style={styles.iconButton}
-          >
-            <Text style={styles.iconButtonText}>✏️</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleDuplicate} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>📋</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>🗑️</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
       <ScrollView style={styles.content}>
-        {/* Hero */}
+        {/* Hero com botões integrados */}
         <View style={[styles.hero, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          {/* Linha com seta voltar e botões de ação */}
+          <View style={styles.heroHeader}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButtonHero}
+            >
+              <Text style={[styles.backButtonTextHero, { color: colors.text }]}>‹</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.headerActions}>
+              <TouchableOpacity onPress={() => setShareModalVisible(true)} style={styles.iconButton}>
+                <Text style={styles.iconButtonText}>🔗</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('EditItinerary', { id: itinerary._id })}
+                style={styles.iconButton}
+              >
+                <Text style={styles.iconButtonText}>✏️</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDuplicate} style={styles.iconButton}>
+                <Text style={styles.iconButtonText}>📋</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
+                <Text style={styles.iconButtonText}>🗑️</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Informações do roteiro */}
           <Text style={[styles.title, { color: colors.text }]}>{itinerary.title}</Text>
           <Text style={[styles.destination, { color: colors.textSecondary }]}>
             {itinerary.destination ? `${itinerary.destination.city || 'N/A'}, ${itinerary.destination.country || 'N/A'}` : 'Destino não informado'}
@@ -305,7 +308,28 @@ export const ItineraryDetailScreen = ({ route, navigation }: any) => {
           <PhotoPicker
             itineraryId={itinerary._id}
             maxPhotos={10}
-            existingPhotos={[]}
+            existingPhotos={itinerary.rating?.photos || []}
+            onPhotosSelected={async (photos) => {
+              try {
+                await itineraryService.update(itinerary._id, {
+                  rating: {
+                    ...itinerary.rating,
+                    photos,
+                  },
+                });
+                // Atualiza o estado local
+                setItinerary({
+                  ...itinerary,
+                  rating: {
+                    ...itinerary.rating,
+                    photos,
+                  },
+                });
+              } catch (error) {
+                console.error('Erro ao salvar fotos:', error);
+                showError('Não foi possível salvar as fotos.');
+              }
+            }}
           />
         </View>
 
@@ -427,6 +451,21 @@ export const ItineraryDetailScreen = ({ route, navigation }: any) => {
         )}
       </ScrollView>
       
+      <ShareModal
+        visible={shareModalVisible}
+        onClose={() => setShareModalVisible(false)}
+        itineraryId={id}
+        itineraryTitle={itinerary?.title || ''}
+        existingShareLink={itinerary?.shareLink}
+      />
+      
+      <RatingModal
+        visible={ratingModalVisible}
+        onClose={() => setRatingModalVisible(false)}
+        onSubmit={handleSubmitRating}
+        existingRating={itinerary?.rating}
+      />
+      
       <Toast
         message={toast.message}
         type={toast.type}
@@ -490,8 +529,22 @@ const styles = StyleSheet.create({
   hero: {
     padding: 24,
     borderBottomWidth: 1,
+  },  heroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  title: {
+  backButtonHero: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButtonTextHero: {
+    fontSize: 36,
+    fontWeight: '300',
+  },  title: {
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 8,

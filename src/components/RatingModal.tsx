@@ -12,6 +12,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Pressable,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { showAlert } from './CustomAlert';
 import { useColors } from '../hooks/useColors';

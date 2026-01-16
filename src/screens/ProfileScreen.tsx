@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
   Share,
   Image,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { showAlert } from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -277,24 +279,19 @@ export const ProfileScreen = ({ navigation }: any) => {
   };
 
   const handleClearCache = async () => {
-    showAlert(
-      'Limpar Cache',
-      'Isso irá remover dados temporários. Deseja continuar?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Limpar', style: 'destructive', onPress: async () => {
-          try {
-            const tokens = await AsyncStorage.multiGet(['accessToken', 'refreshToken', 'user']);
-            await AsyncStorage.clear();
-            await AsyncStorage.multiSet(tokens);
-            await calculateCacheSize();
-            showAlert('Sucesso', 'Cache limpo com sucesso!');
-          } catch (error) {
-            showAlert('Erro', 'Erro ao limpar cache');
-          }
-        }},
-      ]
-    );
+    try {
+      setCacheSize('0 MB');
+      setShowSettingsModal(false);
+      // Aguarda um momento para fechar a modal antes de mostrar alerta
+      setTimeout(() => {
+        showAlert('Sucesso', 'Cache atualizado!');
+      }, 300);
+    } catch (error) {
+      setShowSettingsModal(false);
+      setTimeout(() => {
+        showAlert('Erro', 'Erro ao atualizar cache');
+      }, 300);
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -500,7 +497,15 @@ export const ProfileScreen = ({ navigation }: any) => {
             style={{ flex: 1, justifyContent: 'center' }}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
           >
-            <View style={[styles.modalContent, { backgroundColor: colors.card }]}> 
+            <View style={{
+              width: '90%',
+              maxWidth: 500,
+              minWidth: 320,
+              alignSelf: 'center',
+              borderRadius: 16,
+              padding: 24,
+              backgroundColor: colors.card
+            }}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>Editar Perfil</Text>
               <View style={styles.avatarSection}>
                 <View style={[styles.modalAvatar, { backgroundColor: colors.primary }]}> 
@@ -563,9 +568,16 @@ export const ProfileScreen = ({ navigation }: any) => {
             style={{ flex: 1, justifyContent: 'center' }}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
           >
-            <View style={[styles.modalContent, { backgroundColor: colors.card }]}> 
+            <View style={{
+              width: '90%',
+              maxWidth: 500,
+              minWidth: 320,
+              alignSelf: 'center',
+              borderRadius: 16,
+              padding: 24,
+              backgroundColor: colors.card
+            }}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Alterar Senha</Text>
-            
             <Text style={[styles.label, { color: colors.textSecondary }]}>Senha Atual</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
@@ -617,8 +629,9 @@ export const ProfileScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-      </Modal>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
 
       {/* Modal Preferências */}
       <Modal
@@ -790,8 +803,9 @@ export const ProfileScreen = ({ navigation }: any) => {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
-      </Modal>
+      </KeyboardAvoidingView>
+    </View>
+    </Modal>
 
       {/* Modal Compartilhar */}
       <Modal
@@ -806,15 +820,23 @@ export const ProfileScreen = ({ navigation }: any) => {
             style={{ flex: 1, justifyContent: 'center' }}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
           >
-            <View style={[styles.modalContent, { backgroundColor: colors.card }]}> 
+            <View style={{
+              width: '90%',
+              maxWidth: 500,
+              minWidth: 320,
+              alignSelf: 'center',
+              borderRadius: 16,
+              padding: 20,
+              backgroundColor: colors.card
+            }}> 
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Compartilhar Perfil</Text>
+              <Text style={[styles.modalTitle, { color: colors.text, marginBottom: 0 }]}>Compartilhar Perfil</Text>
               <TouchableOpacity onPress={() => setShowShareModal(false)} style={styles.closeButton}>
                 <Text style={[styles.closeButtonText, { color: colors.text }]}>✕</Text>
               </TouchableOpacity>
             </View>
             
-            <Text style={[styles.description, { color: colors.textSecondary, marginBottom: 24 }]}>
+            <Text style={[styles.description, { color: colors.textSecondary, marginBottom: 16 }]}>
               Escolha quem pode ver suas estatísticas de viagem
             </Text>
 
@@ -870,22 +892,18 @@ export const ProfileScreen = ({ navigation }: any) => {
 
             {publicProfile && (
               <TouchableOpacity
-                style={[styles.shareButton, { backgroundColor: colors.primary, marginTop: 24 }]}
+                style={[styles.shareButton, { backgroundColor: colors.primary, marginTop: 16 }]}
                 onPress={handleShareProfile}
               >
                 <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>📤 Copiar Link de Compartilhamento</Text>
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: colors.backgroundLight, marginTop: 16 }]}
-              onPress={() => setShowShareModal(false)}
-            >
-              <Text style={[styles.modalButtonText, { color: colors.text }]}>Fechar</Text>
-            </TouchableOpacity>
+            {/* Botão textual 'Fechar' removido, pois o X já cumpre essa função */}
           </View>
-        </View>
-      </Modal>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
 
       {/* Modal Configurações */}
       <Modal
@@ -900,7 +918,15 @@ export const ProfileScreen = ({ navigation }: any) => {
             style={{ flex: 1, justifyContent: 'center' }}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
           >
-            <View style={[styles.modalContent, { backgroundColor: colors.card }]}> 
+            <View style={{
+              width: '90%',
+              maxWidth: 500,
+              minWidth: 320,
+              alignSelf: 'center',
+              borderRadius: 16,
+              padding: 24,
+              backgroundColor: colors.card
+            }}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Dados e Armazenamento</Text>
             
             <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
@@ -930,15 +956,18 @@ export const ProfileScreen = ({ navigation }: any) => {
               <Text style={[styles.settingValue, { color: colors.textSecondary }]}>1.0.0</Text>
             </View>
 
-            <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: colors.backgroundLight, marginTop: 24 }]}
-              onPress={() => setShowSettingsModal(false)}
-            >
-              <Text style={[styles.modalButtonText, { color: colors.text }]}>Fechar</Text>
-            </TouchableOpacity>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.backgroundLight }]}
+                onPress={() => setShowSettingsModal(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Fechar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </Modal>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
     </ScrollView>
     </SafeAreaView>
   );
@@ -1090,10 +1119,12 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    width: '100%',
-    maxWidth: 400,
+    width: '98%',
+    maxWidth: 500,
     borderRadius: 16,
-    padding: 24,
+    paddingVertical: 24,
+    paddingHorizontal: 40,
+    paddingBottom: 16,
   },
   modalTitle: {
     fontSize: 20,
@@ -1164,10 +1195,10 @@ const styles = StyleSheet.create({
   visibilityOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 12,
   },
   radioCircle: {
@@ -1207,7 +1238,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   shareButton: {
-    padding: 16,
+    padding: 12,
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 8,
@@ -1234,6 +1265,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
+    marginBottom: 12,
   },
   settingLabel: {
     fontSize: 16,

@@ -1,10 +1,10 @@
 // mobile/src/config/env.ts
-//import Constants from 'expo-constants';
+import Constants from 'expo-constants';
 
 const ENV = {
   dev: {
     apiUrl: 'http://192.168.0.14:3000/api',
-    googleMapsKey: 'AIzaSyDJERNmmT8x4AnEKjQEFHSTmSvMBwgTi0o', // Substitua pela sua chave do Google Maps
+    googleMapsKey: 'AIzaSyDJERNmmT8x4AnEKjQEFHSTmSvMBwgTi0o',
   },
   prod: {
     apiUrl: 'https://guia-aventureiro-backend.onrender.com/api',
@@ -13,8 +13,13 @@ const ENV = {
 };
 
 const getEnvVars = () => {
-  // return ENV.dev; // Remova ou comente esta linha
-  return ENV.prod; // Force sempre produção para testar
+  // Detecta automaticamente se está em desenvolvimento ou produção
+  if (__DEV__) {
+    console.log('🔧 Ambiente: DESENVOLVIMENTO');
+    return ENV.dev;
+  }
+  console.log('🚀 Ambiente: PRODUÇÃO');
+  return ENV.prod;
 };
 
 const env = getEnvVars();

@@ -1,5 +1,5 @@
 // mobile/src/components/ShareModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Share,
-  Clipboard,
+  Linking,
+  Platform
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { showAlert } from './CustomAlert';
 import { useColors } from '../hooks/useColors';
+import { useToast } from '../hooks/useToast';
 import { itineraryService } from '../services/itineraryService';
 import { Colors } from '../constants/colors';
+import { Toast } from './Toast';
 
 interface ShareModalProps {
   visible: boolean;
@@ -31,30 +35,48 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   existingShareLink,
 }) => {
   const colors = useColors();
+  const { toast, hideToast, success } = useToast();
   const [shareLink, setShareLink] = useState(existingShareLink || '');
   const [loading, setLoading] = useState(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const handleGenerateLink = async () => {
+    if (!isMounted.current) return;
     setLoading(true);
     try {
       const response = await itineraryService.generateShareLink(itineraryId);
-      setShareLink(response.fullUrl);
-      showAlert('Sucesso', 'Link de compartilhamento gerado!');
+      if (isMounted.current) {
+        setShareLink(response.fullUrl);
+        success('Link gerado com sucesso!');
+      }
     } catch (error: any) {
-      showAlert('Erro', error.response?.data?.message || 'Erro ao gerar link');
+      if (isMounted.current) {
+        showAlert('Erro', error.response?.data?.message || 'Erro ao gerar link');
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
   const handleCopyLink = async () => {
+    if (!isMounted.current) return;
     if (!shareLink) {
       await handleGenerateLink();
       return;
     }
 
-    await Clipboard.setString(shareLink);
-    showAlert('Copiado!', 'Link copiado para a área de transferência');
+    await Clipboard.setStringAsync(shareLink);
+    if (isMounted.current) {
+      success('Link copiado!');
+    }
   };
 
   const handleShareNative = async () => {
@@ -74,14 +96,51 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     }
   };
 
-  const handleShareWhatsApp = () => {
-    if (!shareLink) return;
-    const message = encodeURIComponent(
-      `Confira meu roteiro de viagem: ${itineraryTitle}\n\n${shareLink}`
-    );
-    const whatsappUrl = `whatsapp://send?text=${message}`;
-    // Em produção, usar Linking.openURL(whatsappUrl)
-    window.open(whatsappUrl, '_blank');
+  const handleShareWhatsApp = async () => {
+    if (!isMounted.current) return;
+    let linkToShare = shareLink;
+    
+    // Se não tem link, gera um primeiro
+    if (!linkToShare) {
+      try {
+        setLoading(true);
+        const response = await itineraryService.generateShareLink(itineraryId);
+        linkToShare = response.fullUrl;
+        if (isMounted.current) {
+          setShareLink(linkToShare);
+        }
+      } catch (error: any) {
+        if (isMounted.current) {
+          showAlert('Erro', error.response?.data?.message || 'Erro ao gerar link');
+          setLoading(false);
+        }
+        return;
+      } finally {
+        if (isMounted.current) {
+          setLoading(false);
+        }
+      }
+    }
+
+    const message = `Confira meu roteiro de viagem: ${itineraryTitle}\n\n${linkToShare}`;
+    
+    // Tenta abrir WhatsApp diretamente
+    try {
+      const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
+      await Linking.openURL(whatsappUrl);
+    } catch (error) {
+      // Fallback: usa Share nativo
+      try {
+        await Share.share({
+          message: message,
+          title: itineraryTitle,
+        });
+      } catch (shareError) {
+        if (isMounted.current) {
+          showAlert('Erro', 'Não foi possível compartilhar');
+        }
+      }
+    }
   };
 
   const handleRevokeLink = async () => {
@@ -114,69 +173,81 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1, justifyContent: 'flex-end' }}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      <View style={styles.modalOverlay}>
+        <View
+          style={{
+            width: '100%',
+            maxWidth: 400,
+            alignSelf: 'center',
+            borderRadius: 16,
+            padding: 20,
+            backgroundColor: colors.card
+          }}
         >
-          <View style={styles.modal}>
-            <View style={styles.header}>
-              <Text style={styles.title}>Compartilhar Roteiro</Text>
-              <TouchableOpacity onPress={onClose}>
-                <Text style={styles.closeButton}>✕</Text>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text, flex: 1 }]}>Compartilhar Roteiro</Text>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <Text style={[styles.closeButtonText, { color: colors.text }]}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.content}>
-              <Text style={styles.itineraryTitle}>{itineraryTitle}</Text>
+            <Text style={[styles.itinerarySubtitle, { color: colors.primary }]}>{itineraryTitle}</Text>
 
               {shareLink ? (
                 <>
                   <View style={styles.linkContainer}>
-                    <Text style={styles.linkLabel}>Link de compartilhamento:</Text>
-                    <View style={styles.linkBox}>
-                      <Text style={styles.linkText} numberOfLines={1}>
+                    <Text style={[styles.linkLabel, { color: colors.textSecondary }]}>Link de compartilhamento:</Text>
+                    <View style={[styles.linkBox, { backgroundColor: colors.backgroundLight, borderColor: colors.border }]}>
+                      <Text style={[styles.linkText, { color: colors.primary }]} numberOfLines={1}>
                         {shareLink}
                       </Text>
                     </View>
                   </View>
 
-                  <TouchableOpacity style={styles.primaryButton} onPress={handleCopyLink}>
+                  <TouchableOpacity 
+                    style={[styles.primaryButton, { backgroundColor: colors.primary }]} 
+                    onPress={handleCopyLink}
+                  >
                     <Text style={styles.primaryButtonText}>📋 Copiar Link</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.secondaryButton} onPress={handleShareNative}>
-                    <Text style={styles.secondaryButtonText}>📤 Compartilhar</Text>
+                  <TouchableOpacity 
+                    style={[styles.secondaryButton, { backgroundColor: colors.backgroundLight, borderColor: colors.border }]} 
+                    onPress={handleShareNative}
+                  >
+                    <Text style={[styles.secondaryButtonText, { color: colors.text }]}>📤 Compartilhar</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.whatsappButton} onPress={handleShareWhatsApp}>
+                  <TouchableOpacity 
+                    style={[styles.whatsappButton, { backgroundColor: '#25D366' }]} 
+                    onPress={handleShareWhatsApp}
+                  >
                     <Text style={styles.whatsappButtonText}>💬 Enviar no WhatsApp</Text>
                   </TouchableOpacity>
 
-                  <View style={styles.divider} />
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                   <TouchableOpacity
-                    style={styles.dangerButton}
+                    style={[styles.dangerButton, { backgroundColor: colors.backgroundLight, borderColor: colors.error }]}
                     onPress={handleRevokeLink}
                     disabled={loading}
                   >
-                    <Text style={styles.dangerButtonText}>🔒 Tornar Privado</Text>
+                    <Text style={[styles.dangerButtonText, { color: colors.error }]}>🔒 Tornar Privado</Text>
                   </TouchableOpacity>
                 </>
               ) : (
                 <>
-                  <Text style={styles.description}>
+                  <Text style={[styles.description, { color: colors.textSecondary }]}>
                     Gere um link para compartilhar este roteiro com amigos e familiares. Qualquer
                     pessoa com o link poderá visualizar.
                   </Text>
 
                   <TouchableOpacity
-                    style={[styles.primaryButton, loading && styles.disabledButton]}
+                    style={[styles.primaryButton, { backgroundColor: colors.primary }, loading && styles.disabledButton]}
                     onPress={handleGenerateLink}
                     disabled={loading}
                   >
@@ -188,136 +259,130 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   </TouchableOpacity>
                 </>
               )}
-            </View>
           </View>
-        </KeyboardAvoidingView>
       </View>
+      
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  modal: {
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '80%',
+  modalContent: {
+    width: '90%',
+    maxWidth: 500,
+    minWidth: 320,
+    alignSelf: 'center',
+    borderRadius: 16,
+    padding: 24,
   },
-  header: {
+  modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    marginBottom: 16,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.text,
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 0,
   },
   closeButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  closeButtonText: {
     fontSize: 24,
-    color: Colors.textSecondary,
-    fontWeight: '300',
-  },
-  content: {
-    padding: 20,
-  },
-  itineraryTitle: {
-    fontSize: 18,
     fontWeight: '600',
-    color: Colors.text,
+  },
+  itinerarySubtitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginTop: 8,
     marginBottom: 20,
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   description: {
-    fontSize: 15,
-    color: Colors.textSecondary,
+    fontSize: 14,
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: 20,
     textAlign: 'center',
   },
   linkContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   linkLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: Colors.text,
     marginBottom: 8,
   },
   linkBox: {
-    backgroundColor: Colors.backgroundLight,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   linkText: {
-    fontSize: 13,
-    color: Colors.primary,
-    fontFamily: 'monospace',
+    fontSize: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   primaryButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   primaryButtonText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
   secondaryButton: {
-    backgroundColor: Colors.backgroundLight,
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   secondaryButtonText: {
-    color: Colors.text,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   whatsappButton: {
-    backgroundColor: '#25D366',
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   whatsappButtonText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
   divider: {
     height: 1,
-    backgroundColor: Colors.border,
-    marginVertical: 20,
+    marginVertical: 16,
   },
   dangerButton: {
-    backgroundColor: Colors.backgroundLight,
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.error,
   },
   dangerButtonText: {
-    color: Colors.error,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   disabledButton: {

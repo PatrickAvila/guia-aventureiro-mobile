@@ -8,8 +8,8 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Keyboard,
-  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { showAlert } from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -188,36 +188,32 @@ export const EditItineraryScreen = ({ route, navigation }: any) => {
       return;
     }
 
-    console.log('🔄 Salvando roteiro ID:', id);
-    console.log('📝 Status sendo enviado:', status);
-
     setSaving(true);
     try {
-      const updated = await itineraryService.update(id, {
+      // Atualizar apenas os campos editados
+      const updateData: any = {
         title,
-        destination: {
-          city,
+        destination: { 
+          city, 
           country,
-          coverImage: itinerary?.destination.coverImage,
+          coverImage: itinerary?.destination?.coverImage // preservar imagem
         },
         startDate: startISO,
         endDate: endISO,
         budget: {
           level: budgetLevel,
-          currency: 'BRL',
-          estimatedTotal: itinerary?.budget.estimatedTotal || 0,
+          currency: itinerary?.budget?.currency || 'BRL',
+          estimatedTotal: itinerary?.budget?.estimatedTotal || 0,
+          spent: itinerary?.budget?.spent || 0, // preservar gastos
         },
         status,
-      });
+      };
 
-      console.log('✅ Roteiro atualizado:', updated._id);
-      console.log('📊 Status retornado:', updated.status);
+      const updated = await itineraryService.update(id, updateData);
 
       success('Roteiro atualizado com sucesso!');
       setTimeout(() => {
-        // Voltar para a tela de detalhes e forçar reload
         navigation.goBack();
-        // O ItineraryDetail já tem useEffect que recarrega quando 'refresh' muda
       }, 500);
     } catch (err: any) {
       console.error('❌ Erro ao salvar:', err);
@@ -253,166 +249,168 @@ export const EditItineraryScreen = ({ route, navigation }: any) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={{ flex: 1 }}>
-          <ScrollView 
-            style={styles.scrollView} 
-            contentContainerStyle={styles.content}
-            keyboardShouldPersistTaps="always"
-          >
-            <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>✏️ Editar Roteiro</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Atualize as informações do seu roteiro de viagem
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Destino</Text>
-          
-          <Input
-            label="Título do roteiro"
-            placeholder="Ex: Viagem para Paris"
-            value={title}
-            onChangeText={setTitle}
-          />
-          
-          <PlaceAutocomplete
-            label="Buscar destino"
-            placeholder="Digite uma cidade... (Ex: Paris, Rio de Janeiro)"
-            initialValue={city && country ? `${city}, ${country}` : ''}
-            onPlaceSelected={(details) => {
-              setCity(details.city);
-              setCountry(details.country);
-            }}
-          />
-          
-          <View style={styles.manualInputs}>
-            <Input
-              label="Cidade"
-              placeholder="Selecione um destino acima"
-              value={city}
-              onChangeText={setCity}
-              containerStyle={styles.halfInput}
-              editable={false}
-            />
-            <Input
-              label="País"
-              placeholder="Selecione um destino acima"
-              value={country}
-              onChangeText={setCountry}
-              containerStyle={styles.halfInput}
-              editable={false}
-            />
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Datas</Text>
-          <DateInput
-            label="Data de início"
-            placeholder="DD/MM/AAAA"
-            value={startDate}
-            onChangeText={handleStartDateChange}
-            error={dateErrors.start}
-          />
-          <DateInput
-            label="Data de término"
-            placeholder="DD/MM/AAAA"
-            value={endDate}
-            onChangeText={setEndDate}
-            error={dateErrors.end}
-          />
-
-          {/* Preview de duração */}
-          {duration !== null && duration > 0 && !dateErrors.start && !dateErrors.end && (
-            <View style={[styles.durationPreview, { backgroundColor: colors.primary + '15' }]}>
-              <Text style={styles.durationIcon}>📅</Text>
-              <View style={styles.durationTextContainer}>
-                <Text style={[styles.durationText, { color: colors.primary }]}>
-                  {duration} {duration === 1 ? 'dia' : 'dias'} de viagem
-                </Text>
-                {startDate && endDate && validateDate(startDate) && validateDate(endDate) && (
-                  <Text style={[styles.durationDates, { color: colors.textSecondary }]}>
-                    {format(parse(startDate, 'dd/MM/yyyy', new Date()), "dd 'de' MMM", { locale: ptBR })} até{' '}
-                    {format(parse(endDate, 'dd/MM/yyyy', new Date()), "dd 'de' MMM 'de' yyyy", { locale: ptBR })}
-                  </Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          removeClippedSubviews={false}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+        >
+              <View style={styles.header}>
+                <View style={styles.headerTop}>
+                  <TouchableOpacity 
+                    style={styles.backButton} 
+                    onPress={() => navigation.goBack()}
+                  >
+                    <Text style={[styles.backArrow, { color: colors.text }]}>‹</Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.title, { color: colors.text }]}>✏️ Editar Roteiro</Text>
+                </View>
+                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Atualize as informações do seu roteiro de viagem</Text>
+              </View>
+              {/* Conteúdo do formulário */}
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Destino</Text>
+                <Input
+                  label="Título do roteiro"
+                  placeholder="Ex: Viagem para Paris"
+                  value={title}
+                  onChangeText={setTitle}
+                />
+                <PlaceAutocomplete
+                  label="Buscar destino"
+                  placeholder="Digite uma cidade... (Ex: Paris, Rio de Janeiro)"
+                  initialValue={city && country ? `${city}, ${country}` : ''}
+                  onPlaceSelected={(details) => {
+                    setCity(details.city);
+                    setCountry(details.country);
+                  }}
+                />
+                <View style={styles.manualInputs}>
+                  <Input
+                    label="Cidade"
+                    placeholder="Selecione um destino acima"
+                    value={city}
+                    onChangeText={setCity}
+                    containerStyle={styles.halfInput}
+                    editable={false}
+                  />
+                  <Input
+                    label="País"
+                    placeholder="Selecione um destino acima"
+                    value={country}
+                    onChangeText={setCountry}
+                    containerStyle={styles.halfInput}
+                    editable={false}
+                  />
+                </View>
+              </View>
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Datas</Text>
+                <DateInput
+                  label="Data de início"
+                  placeholder="DD/MM/AAAA"
+                  value={startDate}
+                  onChangeText={handleStartDateChange}
+                  error={dateErrors.start}
+                />
+                <DateInput
+                  label="Data de término"
+                  placeholder="DD/MM/AAAA"
+                  value={endDate}
+                  onChangeText={setEndDate}
+                  error={dateErrors.end}
+                />
+                {/* Preview de duração */}
+                {duration !== null && duration > 0 && !dateErrors.start && !dateErrors.end && (
+                  <View style={[styles.durationPreview, { backgroundColor: colors.primary + '15' }]}> 
+                    <Text style={styles.durationIcon}>📅</Text>
+                    <View style={styles.durationTextContainer}>
+                      <Text style={[styles.durationText, { color: colors.primary }]}> 
+                        {duration} {duration === 1 ? 'dia' : 'dias'} de viagem
+                      </Text>
+                      {startDate && endDate && validateDate(startDate) && validateDate(endDate) && (
+                        <Text style={[styles.durationDates, { color: colors.textSecondary }]}> 
+                          {format(parse(startDate, 'dd/MM/yyyy', new Date()), "dd 'de' MMM", { locale: ptBR })} até{' '}
+                          {format(parse(endDate, 'dd/MM/yyyy', new Date()), "dd 'de' MMM 'de' yyyy", { locale: ptBR })}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
                 )}
               </View>
-            </View>
-          )}
-        </View>
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Orçamento</Text>
+                <View style={styles.optionsRow}>
+                  {budgetOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.optionCard,
+                        { backgroundColor: colors.card, borderColor: budgetLevel === option.value ? colors.primary : colors.border },
+                        budgetLevel === option.value && { backgroundColor: colors.primary + '10' },
+                      ]}
+                      onPress={() => setBudgetLevel(option.value as any)}
+                    >
+                      <Text style={styles.optionIcon}>{option.icon}</Text>
+                      <Text
+                        style={[
+                          styles.optionLabel,
+                          { color: budgetLevel === option.value ? colors.primary : colors.textSecondary },
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Status da Viagem</Text>
+                <View style={styles.optionsRow}>
+                  {statusOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.statusCard,
+                        { backgroundColor: colors.card, borderColor: status === option.value ? colors.primary : colors.border },
+                        status === option.value && { backgroundColor: colors.primary + '10' },
+                      ]}
+                      onPress={() => setStatus(option.value as any)}
+                    >
+                      <Text style={styles.optionIcon}>{option.icon}</Text>
+                      <Text
+                        style={[
+                          styles.optionLabel,
+                          { color: status === option.value ? colors.primary : colors.textSecondary },
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              <Button
+                title="Salvar alterações"
+                onPress={handleSave}
+                loading={saving}
+                style={styles.saveButton}
+              />
+              <Toast
+                message={toast.message}
+                type={toast.type}
+                visible={toast.visible}
+                onHide={hideToast}
+              />
+            </ScrollView>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Orçamento</Text>
-          <View style={styles.optionsRow}>
-            {budgetOptions.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.optionCard,
-                  { backgroundColor: colors.card, borderColor: budgetLevel === option.value ? colors.primary : colors.border },
-                  budgetLevel === option.value && { backgroundColor: colors.primary + '10' },
-                ]}
-                onPress={() => setBudgetLevel(option.value as any)}
-              >
-                <Text style={styles.optionIcon}>{option.icon}</Text>
-                <Text
-                  style={[
-                    styles.optionLabel,
-                    { color: budgetLevel === option.value ? colors.primary : colors.textSecondary },
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Status da Viagem</Text>
-          <View style={styles.optionsRow}>
-            {statusOptions.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.statusCard,
-                  { backgroundColor: colors.card, borderColor: status === option.value ? colors.primary : colors.border },
-                  status === option.value && { backgroundColor: colors.primary + '10' },
-                ]}
-                onPress={() => setStatus(option.value as any)}
-              >
-                <Text style={styles.optionIcon}>{option.icon}</Text>
-                <Text
-                  style={[
-                    styles.optionLabel,
-                    { color: status === option.value ? colors.primary : colors.textSecondary },
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <Button
-          title="Salvar alterações"
-          onPress={handleSave}
-          loading={saving}
-          style={styles.saveButton}
-        />
-
-            <Toast
-              message={toast.message}
-              type={toast.type}
-              visible={toast.visible}
-              onHide={hideToast}
-            />
-          </ScrollView>
-        </View>
-      </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -422,7 +420,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollView: {
-    flex: 1,
+    // flex: 1, // Removido para evitar conflito de rolagem
   },
   content: {
     padding: 20,
@@ -435,6 +433,22 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 32,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -8,
+  },
+  backArrow: {
+    fontSize: 36,
+    fontWeight: '300',
   },
   title: {
     fontSize: 28,

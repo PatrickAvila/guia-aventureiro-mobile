@@ -1,6 +1,6 @@
 import { formatBRL } from '../components/Input';
 // mobile/src/screens/AchievementsScreen.tsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '../hooks/useColors';
 import { BadgeItem } from '../components/BadgeItem';
 import { Toast } from '../components/Toast';
@@ -42,12 +43,14 @@ export const AchievementsScreen = ({ navigation }: any) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [showError]);
+  }, []); // Sem dependências para evitar loop
 
-  useEffect(() => {
-    loadAchievements();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Carregar apenas no mount
+  // Recarregar conquistas sempre que a tela receber foco
+  useFocusEffect(
+    useCallback(() => {
+      loadAchievements();
+    }, [loadAchievements])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);

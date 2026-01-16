@@ -2,6 +2,7 @@
 import { formatBRL } from '../components/Input';
 // mobile/src/screens/DashboardScreen.tsx
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -15,6 +16,8 @@ import {
   Modal,
   Keyboard,
   TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
@@ -47,14 +50,8 @@ export const DashboardScreen = ({ navigation }: any) => {
   const [sortBy, setSortBy] = useState<'recent' | 'oldest' | 'date'>('recent');
   const [showSortModal, setShowSortModal] = useState(false);
 
-  // Carregar apenas no mount inicial
-  useEffect(() => {
-    if (user) {
-      loadItineraries();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Apenas no mount
 
+  // Carregar no mount e sempre que voltar ao foco
   const loadItineraries = useCallback(async () => {
     try {
       setHasError(false);
@@ -111,7 +108,16 @@ export const DashboardScreen = ({ navigation }: any) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [error]);
+  }, []); // Sem dependências para evitar recriação
+
+  // Recarregar sempre que a tela ganhar foco
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        loadItineraries();
+      }
+    }, [user, loadItineraries])
+  );
 
   const applyFilters = useCallback(() => {
     let filtered = [...itineraries];
@@ -322,7 +328,9 @@ export const DashboardScreen = ({ navigation }: any) => {
             itinerary={item}
             onPress={() => {
               console.log('🔗 Navegando para roteiro:', item._id, 'Título:', item.title);
-              navigation.navigate('ItineraryDetail', { id: item._id });
+              navigation.navigate('ItineraryDetail', {
+                id: item._id
+              });
             }}
           />
         )}
