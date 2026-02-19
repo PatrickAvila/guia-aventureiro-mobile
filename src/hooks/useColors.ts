@@ -1,5 +1,5 @@
 // mobile/src/hooks/useColors.ts
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { LightColors, DarkColors } from '../constants/colors';
 
 /**
