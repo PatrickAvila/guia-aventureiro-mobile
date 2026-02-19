@@ -24,6 +24,9 @@ export const DateInput: React.FC<DateInputProps> = ({
   const [tempDate, setTempDate] = useState<Date | null>(null);
   const inputRef = useRef<TextInput>(null);
 
+  // Força a cor do texto baseada no background
+  const textColor = colors.background === '#F8F9FA' ? '#000000' : colors.text;
+
   const parseDateFromString = (dateStr: string): Date | null => {
     if (!dateStr) return null;
     try {
@@ -87,13 +90,10 @@ export const DateInput: React.FC<DateInputProps> = ({
     Keyboard.dismiss();
     inputRef.current?.blur();
     
-    // Inicializa tempDate com a data atual ou valor do campo
+    // Inicializa tempDate com a data atual ou valor do campo ANTES de abrir
     const initialDate = parseDateFromString(value) || new Date();
     setTempDate(initialDate);
-    
-    setTimeout(() => {
-      setShowPicker(true);
-    }, 150);
+    setShowPicker(true);
   };
 
   return (
@@ -101,27 +101,32 @@ export const DateInput: React.FC<DateInputProps> = ({
       {label ? <Text style={[styles.label, { color: colors.text }]}>{label}</Text> : null}
       
       <View style={styles.inputRow}>
-        <TextInput
-          ref={inputRef}
+        <TouchableOpacity 
           style={[
             styles.input,
             {
               backgroundColor: colors.card,
               borderColor: error ? (colors.error || '#DC2626') : colors.border,
-              color: colors.text,
             },
           ]}
-          value={value}
-          onChangeText={handleTextChange}
-          placeholder={placeholder}
-          placeholderTextColor={colors.textSecondary}
-          keyboardType="numeric"
-          maxLength={10}
-        />
+          onPress={openPicker}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.inputText,
+            { 
+              color: value ? textColor : colors.textSecondary,
+              fontWeight: value ? '500' : '400',
+            }
+          ]}>
+            {value || placeholder}
+          </Text>
+        </TouchableOpacity>
         
         <TouchableOpacity
           style={[styles.calendarButton, { backgroundColor: colors.primary }]}
           onPress={openPicker}
+          activeOpacity={0.7}
         >
           <Text style={styles.calendarIcon}>📅</Text>
         </TouchableOpacity>
@@ -133,16 +138,17 @@ export const DateInput: React.FC<DateInputProps> = ({
         </Text>
       ) : null}
 
-      {showPicker && (
+      {showPicker && tempDate && (
         <>
-          <DateTimePicker
-            value={tempDate || getPickerDate()}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleDateChange}
-            locale="pt-BR"
-            minimumDate={new Date()}
-          />
+          <View style={styles.pickerWrapper}>
+            <DateTimePicker
+              value={tempDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              onChange={handleDateChange}
+              locale="pt-BR"
+            />
+          </View>
 
           {Platform.OS === 'ios' && (
             <View style={styles.iosButtonContainer}>
@@ -186,7 +192,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  inputText: {
     fontSize: 16,
+    fontWeight: '400',
+  },
+  pickerWrapper: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 8,
   },
   calendarButton: {
     width: 48,

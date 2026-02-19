@@ -14,6 +14,7 @@ import {
   Platform
 } from 'react-native';
 import { useColors } from '../hooks/useColors';
+
 // Função utilitária para formatar valor como Real brasileiro
 function formatBRL(value: number | string) {
   let num = typeof value === 'string' ? Number(value.toString().replace(/[^\d]/g, '')) / 100 : value;
@@ -45,6 +46,7 @@ interface BudgetTrackerProps {
   budgetSpent: number;
   currency: string;
   expenses: Expense[];
+  readOnly?: boolean; // Modo leitura (sem botões de edição)
   onAddExpense: (expense: {
     category: string;
     description: string;
@@ -74,6 +76,7 @@ export const BudgetTracker: React.FC<BudgetTrackerProps> = ({
   budgetSpent,
   currency,
   expenses,
+  readOnly = false,
   onAddExpense,
   onUpdateExpense,
   onDeleteExpense,
@@ -159,12 +162,14 @@ export const BudgetTracker: React.FC<BudgetTrackerProps> = ({
       <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.summaryHeader}>
           <Text style={[styles.summaryTitle, { color: colors.text }]}>Orçamento</Text>
-          <TouchableOpacity
-            style={[styles.addButton, { backgroundColor: colors.primary }]}
-            onPress={() => setShowAddModal(true)}
-          >
-            <Text style={styles.addButtonText}>+ Adicionar Gasto</Text>
-          </TouchableOpacity>
+          {!readOnly && (
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: colors.primary }]}
+              onPress={() => setShowAddModal(true)}
+            >
+              <Text style={styles.addButtonText}>+ Adicionar Gasto</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Barra de Progresso */}
@@ -240,9 +245,11 @@ export const BudgetTracker: React.FC<BudgetTrackerProps> = ({
                   <Text style={[styles.expenseAmount, { color: colors.text }]}>
                     {formatBRL(expense.amount)}
                   </Text>
-                  <TouchableOpacity onPress={() => handleDeleteExpense(expense)}>
-                    <Text style={[styles.deleteButton, { color: colors.error }]}>✕</Text>
-                  </TouchableOpacity>
+                  {!readOnly && (
+                    <TouchableOpacity onPress={() => handleDeleteExpense(expense)}>
+                      <Text style={[styles.deleteButton, { color: colors.error }]}>✕</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             );

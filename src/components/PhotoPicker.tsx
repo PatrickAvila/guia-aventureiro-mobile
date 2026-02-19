@@ -12,12 +12,15 @@ import {
 } from 'react-native';
 import { photoService } from '../services/photoService';
 import { useColors } from '../hooks/useColors';
+import { useMySubscription } from '../hooks/useSubscription';
+import { showAlert } from './CustomAlert';
 
 interface PhotoPickerProps {
   onPhotosSelected?: (urls: string[]) => void;
   maxPhotos?: number;
   itineraryId?: string;
   existingPhotos?: string[];
+  onUpgradePress?: () => void;
 }
 
 export const PhotoPicker: React.FC<PhotoPickerProps> = ({
@@ -25,15 +28,53 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
   maxPhotos = 10,
   itineraryId,
   existingPhotos = [],
+  onUpgradePress,
 }) => {
   const colors = useColors();
+  const { data: subscriptionData } = useMySubscription();
   const [photos, setPhotos] = useState<string[]>(existingPhotos);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
 
+  const currentPlan = subscriptionData?.subscription?.plan || 'free';
+  const planLimits = subscriptionData?.subscription?.limits;
+  
+  // Determinar limite de fotos baseado no plano
+  const photoLimit = planLimits?.photos || 0;
+
   const handleAddPhoto = async () => {
-    if (photos.length >= maxPhotos) {
-      alert(`Você pode adicionar no máximo ${maxPhotos} fotos`);
+    // Verificar se o plano permite upload de fotos
+    if (photoLimit === 0) {
+      showAlert(
+        'Recurso Premium',
+        'Upload de fotos está disponível apenas para assinantes Premium (até 20 fotos) e Pro (até 50 fotos).',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Ver Planos',
+            onPress: () => {
+              onUpgradePress?.();
+            }
+          }
+        ]
+      );
+      return;
+    }
+    
+    if (photos.length >= photoLimit) {
+      showAlert(
+        'Limite Atingido',
+        `Você atingiu o limite de ${photoLimit} fotos por roteiro do plano ${currentPlan.toUpperCase()}. Faça upgrade para adicionar mais fotos!`,
+        [
+          { text: 'OK', style: 'cancel' },
+          {
+            text: 'Ver Planos',
+            onPress: () => {
+              onUpgradePress?.();
+            }
+          }
+        ]
+      );
       return;
     }
 
@@ -45,7 +86,7 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
         }
       },
       async () => {
-        const remainingSlots = maxPhotos - photos.length;
+        const remainingSlots = photoLimit - photos.length;
         const uris = await photoService.pickMultipleFromGallery(remainingSlots);
         if (uris.length > 0) {
           await uploadPhotos(uris);
@@ -115,7 +156,8 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Fotos</Text>
         <Text style={[styles.counter, { color: colors.textSecondary }]}>
-          {photos.length}/{maxPhotos}
+          {photos.length}/{photoLimit}
+          {photoLimit === 0 && ' (Premium)'}
         </Text>
       </View>
 
@@ -132,7 +174,7 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
           </View>
         ))}
 
-        {photos.length < maxPhotos && (
+        {photos.length < photoLimit && (
           <TouchableOpacity
             style={[styles.addButton, { borderColor: colors.border, backgroundColor: colors.card }]}
             onPress={handleAddPhoto}
@@ -153,6 +195,16 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
                 <Text style={[styles.addText, { color: colors.textSecondary }]}>Adicionar</Text>
               </>
             )}
+          </TouchableOpacity>
+        )}
+        
+        {photoLimit === 0 && (
+          <TouchableOpacity
+            style={[styles.upgradeButton, { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }]}
+            onPress={onUpgradePress}
+          >
+            <Text style={[styles.upgradeIcon, { color: colors.primary }]}>⭐</Text>
+            <Text style={[styles.upgradeText, { color: colors.primary }]}>Upgrade{'\n'}Premium</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -234,5 +286,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     // color aplicado dinamicamente
     marginTop: 8,
+  },
+  upgradeButton: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  upgradeIcon: {
+    fontSize: 32,
+    marginBottom: 4,
+  },
+  upgradeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

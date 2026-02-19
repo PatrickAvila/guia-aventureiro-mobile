@@ -15,6 +15,7 @@ import * as Clipboard from 'expo-clipboard';
 import { showAlert } from './CustomAlert';
 import { useColors } from '../hooks/useColors';
 import { useToast } from '../hooks/useToast';
+import { useMySubscription } from '../hooks/useSubscription';
 import { itineraryService } from '../services/itineraryService';
 import { Colors } from '../constants/colors';
 import { Toast } from './Toast';
@@ -25,6 +26,7 @@ interface ShareModalProps {
   itineraryId: string;
   itineraryTitle: string;
   existingShareLink?: string;
+  onUpgradePress?: () => void;
 }
 
 export const ShareModal: React.FC<ShareModalProps> = ({
@@ -33,12 +35,16 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   itineraryId,
   itineraryTitle,
   existingShareLink,
+  onUpgradePress,
 }) => {
   const colors = useColors();
   const { toast, hideToast, success } = useToast();
+  const { data: subscriptionData } = useMySubscription();
   const [shareLink, setShareLink] = useState(existingShareLink || '');
   const [loading, setLoading] = useState(false);
   const isMounted = useRef(true);
+
+  const currentPlan = subscriptionData?.subscription?.plan || 'free';
 
   useEffect(() => {
     return () => {
@@ -48,6 +54,26 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   const handleGenerateLink = async () => {
     if (!isMounted.current) return;
+    
+    // Verificar se o plano permite compartilhamento
+    if (currentPlan === 'free') {
+      showAlert(
+        'Recurso Premium',
+        'Compartilhamento de roteiros está disponível apenas para assinantes Premium e Pro.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Ver Planos',
+            onPress: () => {
+              onClose();
+              onUpgradePress?.();
+            }
+          }
+        ]
+      );
+      return;
+    }
+    
     setLoading(true);
     try {
       const response = await itineraryService.generateShareLink(itineraryId);
@@ -57,7 +83,28 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       }
     } catch (error: any) {
       if (isMounted.current) {
-        showAlert('Erro', error.response?.data?.message || 'Erro ao gerar link');
+        const errorMsg = error.response?.data?.message || 'Erro ao gerar link';
+        const errorType = error.response?.data?.error;
+        
+        // Se for erro de feature bloqueada, mostrar opção de upgrade
+        if (errorType === 'feature_locked') {
+          showAlert(
+            'Recurso Premium',
+            errorMsg,
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              {
+                text: 'Ver Planos',
+                onPress: () => {
+                  onClose();
+                  onUpgradePress?.();
+                }
+              }
+            ]
+          );
+        } else {
+          showAlert('Erro', errorMsg);
+        }
       }
     } finally {
       if (isMounted.current) {

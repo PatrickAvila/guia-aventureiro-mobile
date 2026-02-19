@@ -38,6 +38,7 @@ interface RatingModalProps {
     wouldRecommend?: boolean;
   };
   itineraryId: string;
+  onUpgradePress?: () => void;
 }
 
 const HIGHLIGHT_OPTIONS = [
@@ -55,6 +56,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
   onSubmit,
   existingRating,
   itineraryId,
+  onUpgradePress,
 }) => {
   const colors = useColors();
   const [score, setScore] = useState(existingRating?.score || 0);
@@ -226,6 +228,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
                   maxPhotos={6}
                   itineraryId={itineraryId}
                   existingPhotos={photos}
+                  onUpgradePress={onUpgradePress}
                 />
               </View>
             </ScrollView>
