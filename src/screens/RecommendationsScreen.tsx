@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
+import { useColors } from '../hooks/useColors';
 
 const { width } = Dimensions.get('window');
 
@@ -40,6 +41,7 @@ interface Itinerary {
 }
 
 export const RecommendationsScreen = ({ navigation }: any) => {
+  const colors = useColors();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'for-you' | 'trending'>('for-you');
@@ -52,23 +54,37 @@ export const RecommendationsScreen = ({ navigation }: any) => {
     try {
       setLoading(true);
 
-      // Carregar recomendações "Para Você"
-      const forYouRes = await api.get('/recommendations/for-you');
-      setForYouRecommendations(forYouRes.data.recommendations || []);
+      // Carregar múltiplos requests em paralelo com error handling por request
+      const [forYouRes, destRes, trendingRes] = await Promise.allSettled([
+        api.get('/recommendations/for-you'),
+        api.get('/recommendations/destinations', { params: { limit: 5 } }),
+        api.get('/recommendations/trending', { params: { limit: 10 } }),
+      ]);
 
-      // Carregar destinos recomendados
-      const destRes = await api.get('/recommendations/destinations', {
-        params: { limit: 5 },
-      });
-      setDestinations(destRes.data || []);
+      // Processar resultados individuamente
+      if (forYouRes.status === 'fulfilled') {
+        setForYouRecommendations(forYouRes.value.data?.recommendations || []);
+      } else {
+        console.error('Erro ao carregar recomendações "Para Você":', forYouRes.reason);
+        setForYouRecommendations([]);
+      }
 
-      // Carregar roteiros em alta
-      const trendingRes = await api.get('/recommendations/trending', {
-        params: { limit: 10 },
-      });
-      setTrendingItineraries(trendingRes.data || []);
+      if (destRes.status === 'fulfilled') {
+        setDestinations(destRes.value.data || []);
+      } else {
+        console.error('Erro ao carregar destinos:', destRes.reason);
+        setDestinations([]);
+      }
+
+      if (trendingRes.status === 'fulfilled') {
+        setTrendingItineraries(trendingRes.value.data || []);
+      } else {
+        console.error('Erro ao carregar roteiros em alta:', trendingRes.reason);
+        setTrendingItineraries([]);
+      }
     } catch (error) {
-      console.error('Erro ao carregar recomendações:', error);
+      console.error('Erro crítico ao carregar recomendações:', error);
+      // Show error state to user if needed
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -87,7 +103,7 @@ export const RecommendationsScreen = ({ navigation }: any) => {
   const renderDestinationCard = useCallback((destination: Destination, index: number) => (
     <TouchableOpacity
       key={index}
-      style={styles.destinationCard}
+      style={[styles.destinationCard, { backgroundColor: colors.card }]}
       onPress={() => {
         // Navegar para criar roteiro com destino pré-selecionado
         navigation.navigate('Generate', {
@@ -101,21 +117,21 @@ export const RecommendationsScreen = ({ navigation }: any) => {
       {destination.coverImage ? (
         <Image source={{ uri: destination.coverImage }} style={styles.destinationImage} />
       ) : (
-        <View style={[styles.destinationImage, styles.placeholderImage]}>
-          <Ionicons name="location" size={32} color="#CCC" />
+        <View style={[styles.destinationImage, styles.placeholderImage, { backgroundColor: colors.backgroundLight }]}>
+          <Ionicons name="location" size={32} color={colors.textLight} />
         </View>
       )}
       <View style={styles.destinationInfo}>
-        <Text style={styles.destinationCity}>{destination.city}</Text>
-        <Text style={styles.destinationCountry}>{destination.country}</Text>
+        <Text style={[styles.destinationCity, { color: colors.text }]}>{destination.city}</Text>
+        <Text style={[styles.destinationCountry, { color: colors.textSecondary }]}>{destination.country}</Text>
       </View>
     </TouchableOpacity>
-  ), [navigation]);
+  ), [navigation, colors]);
 
   const renderItineraryCard = useCallback((itinerary: Itinerary) => (
     <TouchableOpacity
       key={itinerary._id}
-      style={styles.itineraryCard}
+      style={[styles.itineraryCard, { backgroundColor: colors.card }]}
       onPress={() => navigation.navigate('ItineraryDetail', { id: itinerary._id })}
     >
       {itinerary.destination.coverImage ? (
@@ -124,70 +140,70 @@ export const RecommendationsScreen = ({ navigation }: any) => {
           style={styles.itineraryImage}
         />
       ) : (
-        <View style={[styles.itineraryImage, styles.placeholderImage]}>
-          <Ionicons name="map" size={32} color="#CCC" />
+        <View style={[styles.itineraryImage, styles.placeholderImage, { backgroundColor: colors.backgroundLight }]}>
+          <Ionicons name="map" size={32} color={colors.textLight} />
         </View>
       )}
       <View style={styles.itineraryContent}>
-        <Text style={styles.itineraryTitle} numberOfLines={1}>
+        <Text style={[styles.itineraryTitle, { color: colors.text }]} numberOfLines={1}>
           {itinerary.title}
         </Text>
-        <Text style={styles.itineraryDestination}>
+        <Text style={[styles.itineraryDestination, { color: colors.textSecondary }]}> 
           {itinerary.destination.city}, {itinerary.destination.country}
         </Text>
         <View style={styles.itineraryMeta}>
           <View style={styles.metaItem}>
-            <Ionicons name="calendar-outline" size={14} color="#666" />
-            <Text style={styles.metaText}>{itinerary.duration} dias</Text>
+            <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+            <Text style={[styles.metaText, { color: colors.textSecondary }]}>{itinerary.duration} dias</Text>
           </View>
           {itinerary.rating && typeof itinerary.rating === 'number' && (
             <View style={styles.metaItem}>
-              <Ionicons name="star" size={14} color="#FFD700" />
-              <Text style={styles.metaText}>{itinerary.rating.toFixed(1)}</Text>
+              <Ionicons name="star" size={14} color={colors.warning} />
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}>{itinerary.rating.toFixed(1)}</Text>
             </View>
           )}
           {itinerary.views && (
             <View style={styles.metaItem}>
-              <Ionicons name="eye-outline" size={14} color="#666" />
-              <Text style={styles.metaText}>{itinerary.views}</Text>
+              <Ionicons name="eye-outline" size={14} color={colors.textSecondary} />
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}>{itinerary.views}</Text>
             </View>
           )}
         </View>
       </View>
     </TouchableOpacity>
-  ), [navigation]);
+  ), [navigation, colors]);
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Descubra</Text>
-        <Text style={styles.headerSubtitle}>Roteiros personalizados para você</Text>
+      <View style={[styles.header, { backgroundColor: colors.card }]}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Descubra</Text>
+        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Roteiros personalizados para você</Text>
       </View>
 
       {/* Tabs */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}> 
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'for-you' && styles.tabActive]}
+          style={[styles.tab, activeTab === 'for-you' && styles.tabActive, activeTab === 'for-you' && { borderBottomColor: colors.primary }]}
           onPress={() => setActiveTab('for-you')}
         >
-          <Text style={[styles.tabText, activeTab === 'for-you' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'for-you' && styles.tabTextActive, activeTab === 'for-you' && { color: colors.primary }]}>
             Para Você
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'trending' && styles.tabActive]}
+          style={[styles.tab, activeTab === 'trending' && styles.tabActive, activeTab === 'trending' && { borderBottomColor: colors.primary }]}
           onPress={() => setActiveTab('trending')}
         >
-          <Text style={[styles.tabText, activeTab === 'trending' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'trending' && styles.tabTextActive, activeTab === 'trending' && { color: colors.primary }]}>
             Em Alta
           </Text>
         </TouchableOpacity>
@@ -195,14 +211,15 @@ export const RecommendationsScreen = ({ navigation }: any) => {
 
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={{ paddingBottom: 16 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {activeTab === 'for-you' ? (
           <>
             {/* Destinos Recomendados */}
             {destinations.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Destinos para Você</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Destinos para Você</Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -215,7 +232,7 @@ export const RecommendationsScreen = ({ navigation }: any) => {
 
             {/* Recomendações Personalizadas */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Recomendados</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Recomendados</Text>
               {forYouRecommendations.length > 0 ? (
                 forYouRecommendations.map((item) => {
                   // Pode ser destino ou roteiro
@@ -226,11 +243,11 @@ export const RecommendationsScreen = ({ navigation }: any) => {
                 })
               ) : (
                 <View style={styles.emptyContainer}>
-                  <Ionicons name="compass-outline" size={64} color="#CCC" />
-                  <Text style={styles.emptyText}>
+                  <Ionicons name="compass-outline" size={64} color={colors.textLight} />
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                     Nenhuma recomendação disponível
                   </Text>
-                  <Text style={styles.emptySubtext}>
+                  <Text style={[styles.emptySubtext, { color: colors.textLight }]}>
                     Explore roteiros para receber recomendações personalizadas
                   </Text>
                 </View>
@@ -240,14 +257,14 @@ export const RecommendationsScreen = ({ navigation }: any) => {
         ) : (
           /* Trending Tab */
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Roteiros em Alta</Text>
-            <Text style={styles.sectionSubtitle}>Últimos 7 dias</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Roteiros em Alta</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>Últimos 7 dias</Text>
             {trendingItineraries.length > 0 ? (
               trendingItineraries.map(renderItineraryCard)
             ) : (
               <View style={styles.emptyContainer}>
-                <Ionicons name="trending-up-outline" size={64} color="#CCC" />
-                <Text style={styles.emptyText}>Nenhum roteiro em alta</Text>
+                <Ionicons name="trending-up-outline" size={64} color={colors.textLight} />
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhum roteiro em alta</Text>
               </View>
             )}
           </View>
@@ -260,7 +277,6 @@ export const RecommendationsScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   loadingContainer: {
     flex: 1,
@@ -268,7 +284,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    backgroundColor: '#FFF',
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 12,
@@ -285,11 +300,9 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
     paddingHorizontal: 16,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
   },
   tab: {
     paddingVertical: 8,
@@ -298,7 +311,6 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#007AFF',
   },
   tabText: {
     fontSize: 16,

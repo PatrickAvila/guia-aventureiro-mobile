@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  InteractionManager,
 } from 'react-native';
 import { photoService } from '../services/photoService';
 import { useColors } from '../hooks/useColors';
@@ -33,6 +34,7 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
   const { data: subscriptionData } = useMySubscription();
   const [photos, setPhotos] = useState<string[]>(existingPhotos);
   const [uploading, setUploading] = useState(false);
+  const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
 
   const currentPlan = subscriptionData?.subscription?.plan || 'free';
@@ -50,36 +52,40 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
     try {
       // Verificar se o plano permite upload de fotos
       if (photoLimit === 0) {
-        showAlert(
-          'Recurso Premium',
-          'Upload de fotos está disponível apenas para assinantes Premium (até 20 fotos) e Pro (até 50 fotos).',
-          [
-            { text: 'Cancelar', style: 'cancel' },
-            {
-              text: 'Ver Planos',
-              onPress: () => {
-                onUpgradePress?.();
+        InteractionManager.runAfterInteractions(() => {
+          showAlert(
+            'Recurso Premium',
+            'Upload de fotos está disponível apenas para assinantes Premium (até 20 fotos) e Pro (até 50 fotos).',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              {
+                text: 'Ver Planos',
+                onPress: () => {
+                  onUpgradePress?.();
+                }
               }
-            }
-          ]
-        );
+            ]
+          );
+        });
         return;
       }
       
       if (photos.length >= photoLimit) {
-        showAlert(
-          'Limite Atingido',
-          `Você atingiu o limite de ${photoLimit} fotos por roteiro do plano ${currentPlan.toUpperCase()}. Faça upgrade para adicionar mais fotos!`,
-          [
-            { text: 'OK', style: 'cancel' },
-            {
-              text: 'Ver Planos',
-              onPress: () => {
-                onUpgradePress?.();
+        InteractionManager.runAfterInteractions(() => {
+          showAlert(
+            'Limite Atingido',
+            `Você atingiu o limite de ${photoLimit} fotos por roteiro do plano ${currentPlan.toUpperCase()}. Faça upgrade para adicionar mais fotos!`,
+            [
+              { text: 'OK', style: 'cancel' },
+              {
+                text: 'Ver Planos',
+                onPress: () => {
+                  onUpgradePress?.();
+                }
               }
-            }
-          ]
-        );
+            ]
+          );
+        });
         return;
       }
 
@@ -108,7 +114,9 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
       );
     } catch (error) {
       console.error('Erro ao abrir seletor de fotos:', error);
-      showAlert('Erro', 'Não foi possível abrir o seletor de fotos. Tente novamente.');
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Erro', 'Não foi possível abrir o seletor de fotos. Tente novamente.');
+      });
     }
   };
 
@@ -122,9 +130,13 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
         const newPhotos = [...photos, result];
         setPhotos(newPhotos);
         onPhotosSelected?.(newPhotos);
-        showAlert('Sucesso', 'Foto adicionada com sucesso!');
+        InteractionManager.runAfterInteractions(() => {
+          showAlert('Sucesso', 'Foto adicionada com sucesso!');
+        });
       } else {
-        showAlert('Erro', 'Não foi possível fazer upload da foto. Tente novamente.');
+        InteractionManager.runAfterInteractions(() => {
+          showAlert('Erro', 'Não foi possível fazer upload da foto. Tente novamente.');
+        });
       }
     } catch (error: any) {
       setUploading(false);
@@ -132,14 +144,16 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
       // Verificar se é erro de limite de plano
       if (error?.response?.status === 403 && error?.response?.data?.error === 'limit_reached') {
         console.log('ℹ️ Limite de fotos atingido:', error.response.data);
-        showAlert(
-          'Limite Atingido',
-          error.response.data.message || 'Você atingiu o limite de fotos do seu plano.',
-          [
-            { text: 'Ver Planos', onPress: () => onUpgradePress?.() },
-            { text: 'OK', style: 'cancel' }
-          ]
-        );
+        InteractionManager.runAfterInteractions(() => {
+          showAlert(
+            'Limite Atingido',
+            error.response.data.message || 'Você atingiu o limite de fotos do seu plano.',
+            [
+              { text: 'Ver Planos', onPress: () => onUpgradePress?.() },
+              { text: 'OK', style: 'cancel' }
+            ]
+          );
+        });
       } else if (error?.message?.includes('Network request failed') && retries > 0) {
         // Retry automático em caso de perda de conexão
         console.log(`⚠️ Upload falhou por network, tentando novamente... (${retries} tentativas restantes)`);
@@ -148,12 +162,14 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
       } else {
         // Log do erro mas não quebra a UI
         console.error('Erro ao fazer upload:', error);
-        showAlert(
-          'Erro no Upload',
-          error?.message?.includes('Network request failed')
-            ? 'Upload falhou. Certifique-se de manter o app aberto durante o upload e verifique sua conexão.'
-            : 'Ocorreu um erro ao fazer upload da foto. Verifique sua conexão e tente novamente.'
-        );
+        InteractionManager.runAfterInteractions(() => {
+          showAlert(
+            'Erro no Upload',
+            error?.message?.includes('Network request failed')
+              ? 'Upload falhou. Certifique-se de manter o app aberto durante o upload e verifique sua conexão.'
+              : 'Ocorreu um erro ao fazer upload da foto. Verifique sua conexão e tente novamente.'
+          );
+        });
       }
     }
   };
@@ -164,10 +180,12 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
       
       // Aviso para não sair do app
       if (uris.length > 5) {
-        showAlert(
-          'Upload em Andamento',
-          `Enviando ${uris.length} fotos. Por favor, mantenha o app aberto durante o processo.`
-        );
+        InteractionManager.runAfterInteractions(() => {
+          showAlert(
+            'Upload em Andamento',
+            `Enviando ${uris.length} fotos. Por favor, mantenha o app aberto durante o processo.`
+          );
+        });
       }
       
       const results = await photoService.uploadMultiplePhotos(
@@ -184,9 +202,13 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
         const newPhotos = [...photos, ...results];
         setPhotos(newPhotos);
         onPhotosSelected?.(newPhotos);
-        showAlert('Sucesso', `${results.length} foto(s) adicionada(s) com sucesso!`);
+        InteractionManager.runAfterInteractions(() => {
+          showAlert('Sucesso', `${results.length} foto(s) adicionada(s) com sucesso!`);
+        });
       } else {
-        showAlert('Erro', 'Não foi possível fazer upload das fotos. Tente novamente.');
+        InteractionManager.runAfterInteractions(() => {
+          showAlert('Erro', 'Não foi possível fazer upload das fotos. Tente novamente.');
+        });
       }
     } catch (error: any) {
       setUploading(false);
@@ -195,31 +217,73 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
       // Verificar se é erro de limite de plano
       if (error?.response?.status === 403 && error?.response?.data?.error === 'limit_reached') {
         console.log('ℹ️ Limite de fotos atingido:', error.response.data);
-        showAlert(
-          'Limite Atingido',
-          error.response.data.message || 'Você atingiu o limite de fotos do seu plano.',
-          [
-            { text: 'Ver Planos', onPress: () => onUpgradePress?.() },
-            { text: 'OK', style: 'cancel' }
-          ]
-        );
+        InteractionManager.runAfterInteractions(() => {
+          showAlert(
+            'Limite Atingido',
+            error.response.data.message || 'Você atingiu o limite de fotos do seu plano.',
+            [
+              { text: 'Ver Planos', onPress: () => onUpgradePress?.() },
+              { text: 'OK', style: 'cancel' }
+            ]
+          );
+        });
       } else {
         // Log do erro mas não quebra a UI
         console.error('Erro ao fazer upload:', error);
-        showAlert(
-          'Erro no Upload',
-          error?.message?.includes('Network request failed')
-            ? 'Upload falhou. Certifique-se de manter o app aberto durante o upload e verifique sua conexão.'
-            : 'Ocorreu um erro ao fazer upload das fotos. Verifique sua conexão e tente novamente.'
-        );
+        InteractionManager.runAfterInteractions(() => {
+          showAlert(
+            'Erro no Upload',
+            error?.message?.includes('Network request failed')
+              ? 'Upload falhou. Certifique-se de manter o app aberto durante o upload e verifique sua conexão.'
+              : 'Ocorreu um erro ao fazer upload das fotos. Verifique sua conexão e tente novamente.'
+          );
+        });
       }
     }
   };
 
-  const removePhoto = (index: number) => {
+  const removePhoto = async (index: number) => {
+    const targetPhoto = photos[index];
+    if (!targetPhoto) return;
+
+    // Se tiver itineraryId, remover de forma persistente no backend
+    if (itineraryId) {
+      setDeletingIndex(index);
+      const result = await photoService.deletePhoto(targetPhoto, itineraryId);
+      setDeletingIndex(null);
+
+      if (!result.success) {
+        InteractionManager.runAfterInteractions(() => {
+          showAlert('Não foi possível remover', result.message);
+        });
+        return;
+      }
+
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Foto removida', result.message);
+      });
+    }
+
     const newPhotos = photos.filter((_, i) => i !== index);
     setPhotos(newPhotos);
     onPhotosSelected?.(newPhotos);
+  };
+
+  const handleConfirmRemovePhoto = (index: number) => {
+    InteractionManager.runAfterInteractions(() => {
+      showAlert(
+        'Remover foto',
+        'Tem certeza que deseja remover esta foto do roteiro? Essa ação não poderá ser desfeita.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Remover',
+            style: 'destructive',
+            onPress: () => removePhoto(index),
+          },
+        ]
+      );
+    });
   };
 
   return (
@@ -246,9 +310,14 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
             <Image source={{ uri: photo }} style={[styles.photo, { backgroundColor: colors.border }]} />
             <TouchableOpacity
               style={[styles.removeButton, { backgroundColor: colors.error || '#DC2626' }]}
-              onPress={() => removePhoto(index)}
+              onPress={() => handleConfirmRemovePhoto(index)}
+              disabled={deletingIndex === index}
             >
-              <Text style={styles.removeButtonText}>✕</Text>
+              {deletingIndex === index ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.removeButtonText}>✕</Text>
+              )}
             </TouchableOpacity>
           </View>
         ))}

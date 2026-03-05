@@ -676,15 +676,15 @@ export const ItineraryDetailScreen = ({ route, navigation }: any) => {
   );
 
   const loadItinerary = useCallback(async () => {
-    // Prevenir múltiplas chamadas simultâneas
+    // Prevenir múltiplas chamadas simultâneas (debounce)
     if (isLoadingRef.current) {
       console.log('⚠️ loadItinerary() - Já está carregando, ignorando chamada duplicada');
       return;
     }
 
-    isLoadingRef.current = true;
-
     try {
+      isLoadingRef.current = true;
+      
       // ========== USAR DADOS MOCKADOS SE ID COMEÇAR COM 'mock-' ==========
       if (id.startsWith('mock-')) {
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -701,6 +701,7 @@ export const ItineraryDetailScreen = ({ route, navigation }: any) => {
     } catch (error) {
       // Não mostrar erro aqui para não quebrar a experiência após adicionar gasto
       // O dado anterior continua válido
+      console.error('Erro ao recarregar itinerary detalhes:', error);
     } finally {
       isLoadingRef.current = false;
     }
@@ -1048,10 +1049,10 @@ export const ItineraryDetailScreen = ({ route, navigation }: any) => {
           </Text>
           <View style={styles.badges}>
             <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.badgeText, { color: '#FFFFFF' }]}>{itinerary.duration} dias</Text>
+              <Text style={[styles.badgeText, { color: colors.white }]}>{itinerary.duration} dias</Text>
             </View>
             <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.badgeText, { color: '#FFFFFF' }]}>
+              <Text style={[styles.badgeText, { color: colors.white }]}>
                 {itinerary.budget.level === 'economico'
                   ? '💰 Econômico'
                   : itinerary.budget.level === 'medio'
@@ -1065,13 +1066,13 @@ export const ItineraryDetailScreen = ({ route, navigation }: any) => {
               </View>
             )}
             {isMockPreview && (
-              <View style={[styles.badge, { backgroundColor: '#FF9500' }]}>
-                <Text style={[styles.badgeText, { color: '#FFFFFF' }]}>👁️ Preview</Text>
+              <View style={[styles.badge, { backgroundColor: colors.warning }]}>
+                <Text style={[styles.badgeText, { color: colors.white }]}>👁️ Preview</Text>
               </View>
             )}
             {isPublicPreview && (
-              <View style={[styles.badge, { backgroundColor: '#34C759' }]}>
-                <Text style={[styles.badgeText, { color: '#FFFFFF' }]}>
+              <View style={[styles.badge, { backgroundColor: colors.success }]}>
+                <Text style={[styles.badgeText, { color: colors.white }]}>
                   👤 {itinerary.owner?.name || 'Público'}
                 </Text>
               </View>

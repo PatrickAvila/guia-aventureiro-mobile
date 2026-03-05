@@ -108,7 +108,7 @@ export const Toast: React.FC<ToastProps> = ({
       ]}
     >
       <Text style={styles.icon}>{getIcon()}</Text>
-      <Text style={styles.message}>{message}</Text>
+      <Text style={[styles.message, { color: colors.white }]}>{message}</Text>
     </Animated.View>
   );
 };
@@ -136,6 +136,5 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
 });

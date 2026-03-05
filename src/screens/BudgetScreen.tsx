@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '../hooks/useColors';
+import { CATEGORY_COLORS, OVERLAY_COLORS } from '../constants/colors';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import budgetService from '../services/budgetService';
@@ -51,12 +52,12 @@ interface BudgetSummary {
 }
 
 const CATEGORIES = [
-  { id: 'hospedagem', label: 'Hospedagem', icon: '🏨', color: '#FF6B6B' },
-  { id: 'alimentacao', label: 'Alimentação', icon: '🍽️', color: '#4ECDC4' },
-  { id: 'transporte', label: 'Transporte', icon: '🚗', color: '#FFE66D' },
-  { id: 'passeios', label: 'Passeios', icon: '🎫', color: '#95E1D3' },
-  { id: 'compras', label: 'Compras', icon: '🛍️', color: '#F38181' },
-  { id: 'outros', label: 'Outros', icon: '💰', color: '#AA96DA' },
+  { id: 'hospedagem', label: 'Hospedagem', icon: '🏨', color: CATEGORY_COLORS.hospedagem },
+  { id: 'alimentacao', label: 'Alimentação', icon: '🍽️', color: CATEGORY_COLORS.alimentacao },
+  { id: 'transporte', label: 'Transporte', icon: '🚗', color: CATEGORY_COLORS.transporte },
+  { id: 'passeios', label: 'Passeios', icon: '🎫', color: CATEGORY_COLORS.passeios },
+  { id: 'compras', label: 'Compras', icon: '🛍️', color: CATEGORY_COLORS.compras },
+  { id: 'outros', label: 'Outros', icon: '💰', color: CATEGORY_COLORS.outros },
 ];
 
 function formatBRL(value: number | string) {
@@ -166,7 +167,7 @@ export const BudgetScreen = ({ route, navigation }: any) => {
       category: key,
       amount: value.total,
       percentage: ((value.total / total) * 100).toFixed(1),
-      color: CATEGORIES.find(c => c.id === key)?.color || '#999',
+      color: CATEGORIES.find(c => c.id === key)?.color || colors.textLight,
       icon: CATEGORIES.find(c => c.id === key)?.icon || '💰',
       label: CATEGORIES.find(c => c.id === key)?.label || key,
     })).sort((a, b) => b.amount - a.amount);
@@ -239,7 +240,7 @@ export const BudgetScreen = ({ route, navigation }: any) => {
               <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
                 Gasto
               </Text>
-              <Text style={[styles.summaryValue, { color: isOverBudget ? '#F44336' : colors.text }]}>
+              <Text style={[styles.summaryValue, { color: isOverBudget ? colors.error : colors.text }]}>
                 {formatBRL(summary.budget.spent)}
               </Text>
             </View>
@@ -252,17 +253,17 @@ export const BudgetScreen = ({ route, navigation }: any) => {
                 styles.progressBar,
                 {
                   width: `${Math.min(percentage, 100)}%`,
-                  backgroundColor: isOverBudget ? '#F44336' : isWarning ? '#FF9800' : '#4CAF50',
+                  backgroundColor: isOverBudget ? colors.error : isWarning ? colors.warning : colors.success,
                 },
               ]}
             />
           </View>
 
           <View style={styles.summaryRow}>
-            <Text style={[styles.percentageText, { color: isOverBudget ? '#F44336' : colors.text }]}>
+            <Text style={[styles.percentageText, { color: isOverBudget ? colors.error : colors.text }]}>
               {percentage.toFixed(1)}% utilizado
             </Text>
-            <Text style={[styles.remainingText, { color: isOverBudget ? '#F44336' : '#4CAF50' }]}>
+            <Text style={[styles.remainingText, { color: isOverBudget ? colors.error : colors.success }]}>
               {isOverBudget ? 'Excedido: ' : 'Restante: '}
               {formatBRL(Math.abs(summary.budget.remaining))}
             </Text>
@@ -327,7 +328,7 @@ export const BudgetScreen = ({ route, navigation }: any) => {
                         onPress={() => handleDeleteExpense(expense._id)}
                         style={styles.deleteButton}
                       >
-                        <Text style={{ color: '#F44336', fontSize: 16 }}>🗑️</Text>
+                        <Text style={{ color: colors.error, fontSize: 16 }}>🗑️</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -347,7 +348,7 @@ export const BudgetScreen = ({ route, navigation }: any) => {
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: OVERLAY_COLORS.modalBackdrop }]}
         >
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
@@ -376,7 +377,7 @@ export const BudgetScreen = ({ route, navigation }: any) => {
                     <Text
                       style={[
                         styles.categoryLabel,
-                        { color: category === cat.id ? '#FFF' : colors.text },
+                        { color: category === cat.id ? colors.white : colors.text },
                       ]}
                     >
                       {cat.label}
@@ -424,7 +425,7 @@ export const BudgetScreen = ({ route, navigation }: any) => {
                 disabled={submitting}
               >
                 {submitting ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={colors.white} />
                 ) : (
                   <Text style={styles.submitButtonText}>Adicionar</Text>
                 )}
@@ -630,7 +631,6 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
     borderTopLeftRadius: 20,

@@ -7,7 +7,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -16,6 +15,7 @@ import { useToast } from '../hooks/useToast';
 import { itineraryService } from '../services/itineraryService';
 import { useAuth } from '../contexts/AuthContext';
 import { Toast } from '../components/Toast';
+import { showAlert } from '../components/CustomAlert';
 
 export const SharedItineraryScreen = ({ route, navigation }: any) => {
   const { shareId } = route.params;
@@ -36,17 +36,25 @@ export const SharedItineraryScreen = ({ route, navigation }: any) => {
     mutationFn: () => itineraryService.copySharedItinerary(shareId),
     onSuccess: (data: any) => {
       success('Roteiro copiado com sucesso!');
-      setTimeout(() => {
+      // Usar único timer com cleanup adequado
+      const timer = setTimeout(() => {
         navigation.navigate('Dashboard', {
           screen: 'DashboardMain',
         });
-        setTimeout(() => {
+        // Pequeno delay para garantir que navegação anterior completou
+        const detailTimer = setTimeout(() => {
           navigation.navigate('Dashboard', {
             screen: 'ItineraryDetail',
             params: { id: data.itinerary._id },
           });
-        }, 100);
+        }, 300);
+        
+        // Cleanup para detailTimer
+        return () => clearTimeout(detailTimer);
       }, 500);
+      
+      // Retornar cleanup para timer principal
+      return () => clearTimeout(timer);
     },
     onError: (err: any) => {
       const errorMsg = err.response?.data?.message || 'Erro ao copiar roteiro';
@@ -56,7 +64,7 @@ export const SharedItineraryScreen = ({ route, navigation }: any) => {
 
   const handleCopyToAccount = () => {
     if (!user) {
-      Alert.alert(
+      showAlert(
         'Login Necessário',
         'Você precisa estar logado para copiar este roteiro para sua conta.',
         [
@@ -70,7 +78,7 @@ export const SharedItineraryScreen = ({ route, navigation }: any) => {
       return;
     }
 
-    Alert.alert(
+    showAlert(
       'Copiar Roteiro',
       'Deseja copiar este roteiro para sua conta? Uma cópia será criada nos seus roteiros.',
       [
@@ -111,7 +119,7 @@ export const SharedItineraryScreen = ({ route, navigation }: any) => {
             style={[styles.button, { backgroundColor: colors.primary }]}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.buttonText}>Voltar</Text>
+            <Text style={[styles.buttonText, { color: colors.white }]}>Voltar</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -178,9 +186,9 @@ export const SharedItineraryScreen = ({ route, navigation }: any) => {
         </View>
 
         {/* Dias do roteiro */}
-        {itinerary.days?.map((day: any, index: number) => (
+        {itinerary.days?.map((day: any) => (
           <View
-            key={index}
+            key={`day-${day.day}`}
             style={[styles.dayCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           >
             <Text style={[styles.dayTitle, { color: colors.primary }]}>
@@ -192,7 +200,7 @@ export const SharedItineraryScreen = ({ route, navigation }: any) => {
               </Text>
             )}
             {day.activities?.map((activity: any, actIndex: number) => (
-              <View key={actIndex} style={styles.activity}>
+              <View key={`activity-${day.day}-${actIndex}`} style={[styles.activity, { borderTopColor: colors.border }]}>
                 <Text style={[styles.activityTime, { color: colors.primary }]}>
                   {activity.time}
                 </Text>
@@ -217,11 +225,11 @@ export const SharedItineraryScreen = ({ route, navigation }: any) => {
             disabled={copyMutation.isPending}
           >
             {copyMutation.isPending ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.white} />
             ) : (
               <>
-                <Text style={styles.copyButtonText}>📋 Copiar para Minha Conta</Text>
-                <Text style={styles.copyButtonSubtext}>
+                <Text style={[styles.copyButtonText, { color: colors.white }]}>📋 Copiar para Minha Conta</Text>
+                <Text style={[styles.copyButtonSubtext, { color: colors.white }]}> 
                   Crie uma cópia deste roteiro que você pode editar
                 </Text>
               </>
@@ -363,7 +371,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
   },
   activityTime: {
     fontSize: 14,

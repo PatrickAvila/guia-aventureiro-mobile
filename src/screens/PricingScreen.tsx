@@ -1,5 +1,5 @@
 // mobile/src/screens/PricingScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../hooks/useColors';
 import { usePlans, useMySubscription, useUpgrade } from '../hooks/useSubscription';
@@ -18,7 +18,6 @@ import { Button } from '../components/Button';
 import { PlanBadge } from '../components/PlanBadge';
 import { Plan, BillingCycle, PlanDetails } from '../types/subscription';
 import { showAlert } from '../components/CustomAlert';
-import * as subscriptionService from '../services/subscriptionService';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 64;
@@ -26,7 +25,7 @@ const CARD_WIDTH = width - 64;
 export const PricingScreen = ({ navigation }: any) => {
   const colors = useColors();
   const { data: plansData, isLoading: loadingPlans } = usePlans();
-  const { data: subscriptionData, isLoading: loadingSub } = useMySubscription();
+  const { data: subscriptionData, isLoading: loadingSub, refetch: refetchSubscription } = useMySubscription();
   const upgradeMutation = useUpgrade();
 
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
@@ -37,29 +36,21 @@ export const PricingScreen = ({ navigation }: any) => {
   const currentPlan = subscriptionData?.subscription?.plan || 'free';
   const plans = plansData?.plans || [];
 
+  // Refetch ao ganhar foco para sempre mostrar dados atualizados
+  useFocusEffect(
+    useCallback(() => {
+      console.log('👁️ PricingScreen GANHOU FOCO - refetching subscription...');
+      refetchSubscription();
+    }, [refetchSubscription])
+  );
+
   /**
    * Abre Stripe Checkout para assinar Premium
    */
   const handleSubscribePremium = async () => {
     try {
       setCheckoutLoading(true);
-
-      // Criar sessão de checkout
-      const { url } = await subscriptionService.createCheckoutSession();
-
-      // Abrir Stripe Checkout no browser nativo
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-        
-        showAlert(
-          'Pagamento em andamento',
-          'Complete o pagamento no navegador. Você será redirecionado automaticamente ao finalizar.',
-          [{ text: 'OK' }]
-        );
-      } else {
-        throw new Error('Não foi possível abrir o navegador');
-      }
+      navigation.navigate('UpgradeWebview');
     } catch (error: any) {
       console.error('Erro ao criar checkout:', error);
       
@@ -325,7 +316,7 @@ export const PricingScreen = ({ navigation }: any) => {
             <Text
               style={[
                 styles.cycleButtonText,
-                { color: billingCycle === 'monthly' ? '#FFF' : colors.text },
+                { color: billingCycle === 'monthly' ? colors.white : colors.text },
               ]}
             >
               Mensal
@@ -346,7 +337,7 @@ export const PricingScreen = ({ navigation }: any) => {
             <Text
               style={[
                 styles.cycleButtonText,
-                { color: billingCycle === 'yearly' ? '#FFF' : colors.text },
+                { color: billingCycle === 'yearly' ? colors.white : colors.text },
               ]}
             >
               Anual

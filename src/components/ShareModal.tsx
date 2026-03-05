@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
   Share,
   Linking,
-  Platform
+  Platform,
+  InteractionManager
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { showAlert } from './CustomAlert';
@@ -59,20 +60,23 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     
     // Verificar se o plano permite compartilhamento
     if (currentPlan === 'free') {
-      showAlert(
-        'Recurso Premium',
-        'Compartilhamento de roteiros está disponível apenas para assinantes Premium e Pro.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Ver Planos',
-            onPress: () => {
-              onClose();
-              onUpgradePress?.();
+      // Close modal first to prevent modal/alert overlay deadlock
+      onClose();
+      InteractionManager.runAfterInteractions(() => {
+        showAlert(
+          'Recurso Premium',
+          'Compartilhamento de roteiros está disponível apenas para assinantes Premium e Pro.',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Ver Planos',
+              onPress: () => {
+                onUpgradePress?.();
+              }
             }
-          }
-        ]
-      );
+          ]
+        );
+      });
       return;
     }
     
@@ -90,22 +94,29 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         
         // Se for erro de feature bloqueada, mostrar opção de upgrade
         if (errorType === 'feature_locked') {
-          showAlert(
-            'Recurso Premium',
-            errorMsg,
-            [
-              { text: 'Cancelar', style: 'cancel' },
-              {
-                text: 'Ver Planos',
-                onPress: () => {
-                  onClose();
-                  onUpgradePress?.();
+          // Close modal first to prevent modal/alert overlay deadlock
+          onClose();
+          InteractionManager.runAfterInteractions(() => {
+            showAlert(
+              'Recurso Premium',
+              errorMsg,
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Ver Planos',
+                  onPress: () => {
+                    onUpgradePress?.();
+                  }
                 }
-              }
-            ]
-          );
+              ]
+            );
+          });
         } else {
-          showAlert('Erro', errorMsg);
+          // Close modal first to prevent modal/alert overlay deadlock
+          onClose();
+          InteractionManager.runAfterInteractions(() => {
+            showAlert('Erro', errorMsg);
+          });
         }
       }
     } finally {
@@ -160,7 +171,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         }
       } catch (error: any) {
         if (isMounted.current) {
-          showAlert('Erro', error.response?.data?.message || 'Erro ao gerar link');
+          // Close modal first to prevent modal/alert overlay deadlock
+          onClose();
+          InteractionManager.runAfterInteractions(() => {
+            showAlert('Erro', error.response?.data?.message || 'Erro ao gerar link');
+          });
           setLoading(false);
         }
         return;
@@ -186,18 +201,22 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         });
       } catch (shareError) {
         if (isMounted.current) {
-          showAlert('Erro', 'Não foi possível compartilhar');
+          // Close modal first to prevent modal/alert overlay deadlock
+          onClose();
+          InteractionManager.runAfterInteractions(() => {
+            showAlert('Erro', 'Não foi possível compartilhar');
+          });
         }
       }
     }
   };
 
   const handleRevokeLink = async () => {
-    // Fechar modal primeiro para evitar modal dentro de modal
+    // Close modal first to prevent modal/alert overlay deadlock
     onClose();
     
-    // Pequeno delay para garantir que o modal fechou
-    setTimeout(() => {
+    // Defer the alert until modal is definitely closed
+    InteractionManager.runAfterInteractions(() => {
       showAlert(
         'Revogar Link',
         'Tem certeza? O link atual será desativado e não poderá ser acessado por ninguém.',
@@ -224,7 +243,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           }
         ]
       );
-    }, 300);
+    });
   };
 
   return (

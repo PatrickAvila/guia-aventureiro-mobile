@@ -88,7 +88,12 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   const handleComplete = async () => {
     // Salvar preferência se usuário marcou "não mostrar novamente"
     if (dontShowAgain) {
-      await AsyncStorage.setItem('@guia_aventureiro:skip_onboarding', 'true');
+      try {
+        await AsyncStorage.setItem('@guia_aventureiro:skip_onboarding', 'true');
+      } catch (error) {
+        console.error('Erro ao salvar onboarding preference:', error);
+        // Continua mesmo se falhar ao salvar
+      }
     }
     onComplete();
   };

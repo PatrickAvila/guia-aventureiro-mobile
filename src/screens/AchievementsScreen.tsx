@@ -149,7 +149,7 @@ export const AchievementsScreen = ({ navigation }: any) => {
             ]}
             onPress={() => setFilter('all')}
           >
-            <Text style={[styles.filterText, { color: filter === 'all' ? '#FFFFFF' : colors.text }]}>Todas</Text>
+            <Text style={[styles.filterText, { color: filter === 'all' ? colors.white : colors.text }]}>Todas</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -161,7 +161,7 @@ export const AchievementsScreen = ({ navigation }: any) => {
             ]}
             onPress={() => setFilter('unlocked')}
           >
-            <Text style={[styles.filterText, { color: filter === 'unlocked' ? '#FFFFFF' : colors.text }]}>
+            <Text style={[styles.filterText, { color: filter === 'unlocked' ? colors.white : colors.text }]}>
               Desbloqueadas
             </Text>
           </TouchableOpacity>
@@ -175,7 +175,7 @@ export const AchievementsScreen = ({ navigation }: any) => {
             ]}
             onPress={() => setFilter('locked')}
           >
-            <Text style={[styles.filterText, { color: filter === 'locked' ? '#FFFFFF' : colors.text }]}>Bloqueadas</Text>
+            <Text style={[styles.filterText, { color: filter === 'locked' ? colors.white : colors.text }]}>Bloqueadas</Text>
           </TouchableOpacity>
         </View>
 

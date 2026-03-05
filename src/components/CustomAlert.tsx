@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useColors } from '../hooks/useColors';
+import { OVERLAY_COLORS } from '../constants/colors';
 
 interface AlertButton {
   text: string;
@@ -33,10 +34,12 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
   const colors = useColors();
 
   const handleButtonPress = (button: AlertButton) => {
-    if (button.onPress) {
-      button.onPress();
-    }
     onClose();
+    if (button.onPress) {
+      setTimeout(() => {
+        button.onPress?.();
+      }, 0);
+    }
   };
 
   return (
@@ -79,7 +82,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
                       styles.buttonText,
                       isDestructive && styles.destructiveText,
                       isCancel && { color: colors.text },
-                      !isCancel && !isDestructive && { color: '#FFFFFF' },
+                      !isCancel && !isDestructive && { color: colors.white },
                     ]}
                   >
                     {button.text}
@@ -116,7 +119,7 @@ export const showAlert = (
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: OVERLAY_COLORS.modalBackdrop,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,

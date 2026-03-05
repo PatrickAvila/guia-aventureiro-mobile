@@ -79,23 +79,8 @@ export const itineraryService = {
     budget?: { level: string; currency: string };
     preferences?: any;
   }): Promise<Itinerary> {
-    // Analytics: solicitação de AI (comentado - método não existe no mock)
-    // const duration = Math.ceil(
-    //   (new Date(data.endDate).getTime() - new Date(data.startDate).getTime()) / (1000 * 60 * 60 * 24)
-    // );
-    // await analyticsService.logAISuggestionRequest(
-    //   `${data.destination.city}, ${data.destination.country}`,
-    //   duration
-    // );
-    
     const response = await api.post('/roteiros/generate', data);
     const itinerary = response.data.itinerary;
-    
-    // Analytics: AI sugestão aceita (comentado - método não existe no mock)
-    // await analyticsService.logAISuggestionAccept(
-    //   `${data.destination.city}, ${data.destination.country}`
-    // );
-    
     return itinerary;
   },
 

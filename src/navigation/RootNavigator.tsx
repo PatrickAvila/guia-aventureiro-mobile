@@ -73,11 +73,15 @@ export const RootNavigator = () => {
     };
 
     // Captura link inicial (quando app foi aberto via deep link)
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        handleDeepLink(url);
-      }
-    });
+    Linking.getInitialURL()
+      .then((url) => {
+        if (url) {
+          handleDeepLink(url);
+        }
+      })
+      .catch((error) => {
+        console.error('Erro ao obter Initial URL para deep link:', error);
+      });
 
     // Listener para links recebidos enquanto app está aberto
     const subscription = Linking.addEventListener('url', (event) => {

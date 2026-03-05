@@ -27,55 +27,30 @@ export const UsageScreen = ({ navigation }: any) => {
   const reactivateMutation = useReactivateSubscription();
 
   const [refreshing, setRefreshing] = useState(false);
-  const [forceUpdate, setForceUpdate] = useState(0);
-
-  console.log('🎨 UsageScreen RENDERIZADO', {
-    loading: loadingSub || loadingUsage,
-    fetching: fetchingSub || fetchingUsage,
-    itineraries: usageData?.usage?.itineraries?.current,
-    forceUpdate,
-  });
 
   const subscription = subscriptionData?.subscription;
   const usage = usageData?.usage;
   const planDetails = subscriptionData?.subscription?.planDetails;
 
-  // Debug: Log quando usage mudar
-  useEffect(() => {
-    if (usage) {
-      console.log('🔍 UsageScreen - usage atualizado:', {
-        itineraries: usage.itineraries.current,
-        aiGenerations: usage.aiGenerations.current,
-      });
-    }
-  }, [usage]);
-
   // Refetch ao montar pela primeira vez
   useEffect(() => {
-    console.log('📊 UsageScreen montado - fazendo refetch inicial...');
     const doRefetch = async () => {
-      const [subResult, usageResult] = await Promise.all([refetchSub(), refetchUsage()]);
-      console.log('📊 Refetch inicial completo:', {
-        subscription: subResult.data?.subscription?.plan,
-        usage: usageResult.data?.usage?.itineraries?.current,
-      });
+      try {
+        await Promise.all([refetchSub(), refetchUsage()]);
+      } catch (error) {
+        console.error('Erro ao carregar dados de subscription na montagem:', error);
+        // Loading states continuam, mostram estado de erro ao usuário
+      }
     };
     doRefetch();
-  }, []);
+  }, [refetchSub, refetchUsage]);
 
   // Refetch ao ganhar foco para sempre mostrar dados atualizados
   useFocusEffect(
     useCallback(() => {
-      console.log('👁️👁️👁️ UsageScreen GANHOU FOCO - iniciando refetch...');
       const doRefetch = async () => {
         try {
-          const [subResult, usageResult] = await Promise.all([refetchSub(), refetchUsage()]);
-          console.log('👁️ Refetch ao ganhar foco completo:', {
-            subscription: subResult.data?.subscription?.plan,
-            usage: usageResult.data?.usage?.itineraries?.current,
-          });
-          // Forçar re-render
-          setForceUpdate(prev => prev + 1);
+          await Promise.all([refetchSub(), refetchUsage()]);
         } catch (err) {
           console.error('❌ Erro no refetch:', err);
         }
@@ -178,14 +153,14 @@ export const UsageScreen = ({ navigation }: any) => {
             <PlanBadge plan={subscription?.plan || 'free'} size="large" />
             {isTrial && (
               <View style={[styles.trialBadge, { backgroundColor: colors.info }]}>
-                <Ionicons name="time" size={14} color="#FFF" />
-                <Text style={styles.trialText}>Trial</Text>
+                <Ionicons name="time" size={14} color={colors.white} />
+                <Text style={[styles.trialText, { color: colors.white }]}>Trial</Text>
               </View>
             )}
             {isCancelled && (
               <View style={[styles.cancelledBadge, { backgroundColor: colors.warning }]}>
-                <Ionicons name="alert-circle" size={14} color="#FFF" />
-                <Text style={styles.cancelledText}>Cancelado</Text>
+                <Ionicons name="alert-circle" size={14} color={colors.white} />
+                <Text style={[styles.cancelledText, { color: colors.white }]}>Cancelado</Text>
               </View>
             )}
           </View>
@@ -263,7 +238,7 @@ export const UsageScreen = ({ navigation }: any) => {
           </View>
           <View style={styles.usageList}>
             <UsageBar
-              key={`itineraries-${usage?.itineraries?.current || 0}-${forceUpdate}`}
+                key={`itineraries-${usage?.itineraries?.current || 0}`}
               label="Roteiros"
               current={usage?.itineraries.current || 0}
               limit={usage?.itineraries.limit || 0}
@@ -274,7 +249,7 @@ export const UsageScreen = ({ navigation }: any) => {
             />
 
             <UsageBar
-              key={`ai-${usage?.aiGenerations?.current || 0}-${forceUpdate}`}
+                key={`ai-${usage?.aiGenerations?.current || 0}`}
               label="Criações Mensais"
               current={usage?.aiGenerations.current || 0}
               limit={usage?.aiGenerations.limit || 0}
@@ -286,24 +261,13 @@ export const UsageScreen = ({ navigation }: any) => {
 
             {subscription?.plan !== 'free' && (
               <UsageBar
-                key={`photos-${usage?.photos?.current || 0}-${forceUpdate}`}
+                key={`photos-${usage?.photos?.current || 0}`}
                 label="Fotos"
                 current={usage?.photos.current || 0}
                 limit={usage?.photos.limit || 0}
                 icon="image"
                 showUpgrade={false}
                 onUpgrade={handleUpgrade}
-              />
-            )}
-
-            {subscription?.plan !== 'free' && (
-              <UsageBar
-                key={`collaborators-${usage?.collaborators?.current || 0}-${forceUpdate}`}
-                label="Colaboradores"
-                current={usage?.collaborators.current || 0}
-                limit={usage?.collaborators.limit || 0}
-                unlimited={usage?.collaborators.unlimited}
-                icon="people"
               />
             )}
           </View>
@@ -419,7 +383,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   trialText: {
-    color: '#FFF',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -432,7 +395,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   cancelledText: {
-    color: '#FFF',
     fontSize: 12,
     fontWeight: '600',
   },

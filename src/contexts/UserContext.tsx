@@ -10,7 +10,7 @@ interface UserLimits {
 
 interface UserSubscription {
   plan: 'free' | 'premium';
-  paymentStatus: 'active' | 'inactive' | 'canceled' | 'past_due';
+  status: 'active' | 'cancelled' | 'past_due' | 'trialing';
   limits: UserLimits;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
@@ -56,7 +56,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   }, []);
 
   const isPremium =
-    subscription?.plan === 'premium' && subscription?.paymentStatus === 'active';
+    subscription?.plan === 'premium' && subscription?.status === 'active';
 
   return (
     <UserContext.Provider value={{ subscription, loading, isPremium, refreshUser }}>

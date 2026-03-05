@@ -15,7 +15,8 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  Switch
+  Switch,
+  InteractionManager
 } from 'react-native';
 import { showAlert } from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,10 +26,12 @@ import { useUser } from '../contexts/UserContext';
 import { useColors } from '../hooks/useColors';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { itineraryService } from '../services/itineraryService';
+import { offlineService } from '../services/offlineService';
 import { authService } from '../services/authService';
 import { photoService } from '../services/photoService';
 import analyticsService from '../services/analyticsService';
 import { apiUrl } from '../config/env';
+import { OVERLAY_COLORS } from '../constants/colors';
 import { Tooltip } from '../components/Tooltip';
 import { useTooltip } from '../hooks/useTooltip';
 import { PlanBadge } from '../components/PlanBadge';
@@ -67,6 +70,7 @@ export const ProfileScreen = ({ navigation }: any) => {
   // Modal Configurações
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [cacheSize, setCacheSize] = useState('0 MB');
+  const [clearingCache, setClearingCache] = useState(false);
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
 
   const loadStats = useCallback(async () => {
@@ -119,14 +123,45 @@ export const ProfileScreen = ({ navigation }: any) => {
   }, []);
 
   const calculateCacheSize = useCallback(async () => {
-    try {
-      const keys = await AsyncStorage.getAllKeys();
-      const items = await AsyncStorage.multiGet(keys);
-      const size = items.reduce((acc, [key, value]) => acc + (value?.length || 0), 0);
-      setCacheSize(`${(size / 1024 / 1024).toFixed(2)} MB`);
-    } catch (error) {
-      console.error('Erro ao calcular cache:', error);
-    }
+    // Defer cache calculation to prevent blocking UI thread
+    // Using a safe approach: estimate cache size with controlled async operations
+    const calculateSizeAsync = () => {
+      return new Promise<void>(resolve => {
+        InteractionManager.runAfterInteractions(async () => {
+          try {
+            // Get a small sample of keys to estimate cache size
+            // instead of getAllKeys() which blocks the thread
+            const storageKeys = [
+              '@auth_token',
+              '@user_data',
+              '@offline_itineraries',
+              '@favorites',
+              '@cache_meta'
+            ];
+            
+            let totalSize = 0;
+            for (const key of storageKeys) {
+              const value = await AsyncStorage.getItem(key);
+              if (value) {
+                totalSize += value.length;
+              }
+            }
+            
+            // Estimate based on average key size
+            // Usually cache is 10-50x the sample size
+            const estimatedTotal = totalSize * 25;
+            setCacheSize(`~${(estimatedTotal / 1024 / 1024).toFixed(1)} MB`);
+          } catch (error) {
+            console.error('Erro ao calcular cache:', error);
+            setCacheSize('-- MB');
+          } finally {
+            resolve();
+          }
+        });
+      });
+    };
+    
+    calculateSizeAsync();
   }, []);
 
   const loadAnalyticsPreference = useCallback(async () => {
@@ -143,14 +178,9 @@ export const ProfileScreen = ({ navigation }: any) => {
       setAnalyticsEnabled(enabled);
       await AsyncStorage.setItem('@analytics_enabled', enabled ? 'true' : 'false');
       await analyticsService.setEnabled(enabled);
-      showAlert(
-        'Analytics',
-        enabled 
-          ? 'Coleta de dados de uso habilitada. Isso nos ajuda a melhorar o app!'
-          : 'Coleta de dados de uso desabilitada.'
-      );
     } catch (error) {
       console.error('Erro ao alterar preferência de analytics:', error);
+      setAnalyticsEnabled(!enabled);
       showAlert('Erro', 'Não foi possível alterar a preferência');
     }
   }, []);
@@ -203,17 +233,25 @@ export const ProfileScreen = ({ navigation }: any) => {
 
   const handleSaveProfile = async () => {
     if (!newName.trim()) {
-      showAlert('Erro', 'Digite seu nome');
+      setShowEditModal(false);
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Erro', 'Digite seu nome');
+      });
       return;
     }
 
     setSavingProfile(true);
+    setShowEditModal(false);
+    
     try {
       await updateProfile(newName.trim(), newAvatar);
-      showAlert('Sucesso', 'Perfil atualizado com sucesso!');
-      setShowEditModal(false);
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Sucesso', 'Perfil atualizado com sucesso!');
+      });
     } catch (error: any) {
-      showAlert('Erro', error.message || 'Erro ao atualizar perfil');
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Erro', error.message || 'Erro ao atualizar perfil');
+      });
     } finally {
       setSavingProfile(false);
     }
@@ -228,28 +266,42 @@ export const ProfileScreen = ({ navigation }: any) => {
 
   const handleSavePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      showAlert('Erro', 'Preencha todos os campos');
+      setShowPasswordModal(false);
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Erro', 'Preencha todos os campos');
+      });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      showAlert('Erro', 'As senhas não coincidem');
+      setShowPasswordModal(false);
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Erro', 'As senhas não coincidem');
+      });
       return;
     }
 
     if (newPassword.length < 6) {
-      showAlert('Erro', 'A nova senha deve ter no mínimo 6 caracteres');
+      setShowPasswordModal(false);
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Erro', 'A nova senha deve ter no mínimo 6 caracteres');
+      });
       return;
     }
 
     setSavingPassword(true);
+    setShowPasswordModal(false);
+    
     try {
       await authService.updatePassword(currentPassword, newPassword);
-      showAlert('Sucesso', 'Senha alterada com sucesso!');
-      setShowPasswordModal(false);
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Sucesso', 'Senha alterada com sucesso!');
+      });
     } catch (error: any) {
       const message = error.response?.data?.message || 'Erro ao alterar senha';
-      showAlert('Erro', message);
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Erro', message);
+      });
     } finally {
       setSavingPassword(false);
     }
@@ -266,30 +318,26 @@ export const ProfileScreen = ({ navigation }: any) => {
         { text: 'Cancelar', style: 'cancel' },
         { 
           text: 'Sim', 
-          onPress: () => {
-            resetTooltips()
-              .then(() => {
-                setTimeout(() => {
-                  showAlert(
-                    'Sucesso', 
-                    'Tutorial reiniciado! Você será desconectado. Faça login novamente para ver o tutorial completo.',
-                    [
-                      {
-                        text: 'OK',
-                        onPress: () => {
-                          // Fazer logout após 500ms para garantir que o alert fechou
-                          setTimeout(() => {
-                            logout();
-                          }, 500);
-                        }
+          onPress: async () => {
+            try {
+              await resetTooltips();
+              InteractionManager.runAfterInteractions(() => {
+                showAlert(
+                  'Sucesso', 
+                  'Tutorial reiniciado! Você será desconectado. Faça login novamente para ver o tutorial completo.',
+                  [
+                    {
+                      text: 'OK',
+                      onPress: () => {
+                        logout();
                       }
-                    ]
-                  );
-                }, 400);
-              })
-              .catch(error => {
-                console.error('Erro ao resetar tooltips:', error);
+                    }
+                  ]
+                );
               });
+            } catch (error) {
+              console.error('Erro ao resetar tooltips:', error);
+            }
           }
         }
       ]
@@ -341,26 +389,54 @@ export const ProfileScreen = ({ navigation }: any) => {
       setPublicProfile(!publicProfile);
       // Removido Alert de sucesso - mudança silenciosa
     } catch (error) {
+      setSharingProfile(false);
       showAlert('Erro', 'Erro ao atualizar privacidade');
     } finally {
       setSharingProfile(false);
     }
   };
 
-  const handleClearCache = async () => {
-    try {
-      setCacheSize('0 MB');
-      setShowSettingsModal(false);
-      // Aguarda um momento para fechar a modal antes de mostrar alerta
-      setTimeout(() => {
-        showAlert('Sucesso', 'Cache atualizado!');
-      }, 300);
-    } catch (error) {
-      setShowSettingsModal(false);
-      setTimeout(() => {
-        showAlert('Erro', 'Erro ao atualizar cache');
-      }, 300);
+  const executeClearCache = async () => {
+    if (clearingCache) {
+      return;
     }
+
+    setClearingCache(true);
+    setShowSettingsModal(false);
+
+    InteractionManager.runAfterInteractions(async () => {
+      try {
+        // Limpar apenas cache real (não remover preferências/sessão)
+        const clearCachePromise = offlineService.clearOfflineCache();
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout ao limpar cache')), 3500);
+        });
+
+        await Promise.race([clearCachePromise, timeoutPromise]);
+        setCacheSize('0 MB');
+        showAlert('Tudo certo', 'Cache limpo com sucesso. O app está atualizado.');
+      } catch (error) {
+        console.error('Erro ao limpar cache no perfil:', error);
+        showAlert('Não foi possível concluir', 'Não conseguimos limpar o cache agora. Tente novamente em instantes.');
+      } finally {
+        setClearingCache(false);
+      }
+    });
+  };
+
+  const handleClearCache = () => {
+    setShowSettingsModal(false);
+
+    InteractionManager.runAfterInteractions(() => {
+      showAlert(
+        'Limpar cache',
+        'Deseja realmente limpar o cache do aplicativo? Isso pode deixar o primeiro carregamento um pouco mais lento.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Limpar', style: 'destructive', onPress: executeClearCache },
+        ]
+      );
+    });
   };
 
   const handleLogout = () => {
@@ -379,7 +455,9 @@ export const ProfileScreen = ({ navigation }: any) => {
       await logout();
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
-      showAlert('Erro', 'Não foi possível sair. Tente novamente.');
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Erro', 'Não foi possível sair. Tente novamente.');
+      });
     }
   };
 
@@ -475,7 +553,7 @@ export const ProfileScreen = ({ navigation }: any) => {
         {currentPlan === 'free' && (
           <TouchableOpacity 
             style={[styles.menuItem, { backgroundColor: colors.card, borderBottomColor: colors.border }]}
-            onPress={() => navigation.navigate('Upgrade')}
+            onPress={() => navigation.navigate('UpgradeWebview')}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Text style={{ fontSize: 20 }}>🚀</Text>
@@ -594,7 +672,7 @@ export const ProfileScreen = ({ navigation }: any) => {
                   style={[styles.changePhotoButton, { backgroundColor: colors.primary }]}
                   onPress={handleSelectAvatar}
                 >
-                  <Text style={{ color: '#FFFFFF', fontSize: 12 }}>Alterar Foto</Text>
+                  <Text style={{ color: colors.white, fontSize: 12 }}>Alterar Foto</Text>
                 </TouchableOpacity>
               </View>
               <Text style={[styles.label, { color: colors.textSecondary }]}>Nome</Text>
@@ -619,9 +697,9 @@ export const ProfileScreen = ({ navigation }: any) => {
                   disabled={savingProfile}
                 >
                   {savingProfile ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <ActivityIndicator size="small" color={colors.white} />
                   ) : (
-                    <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Salvar</Text>
+                    <Text style={[styles.modalButtonText, { color: colors.white }]}>Salvar</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -697,9 +775,9 @@ export const ProfileScreen = ({ navigation }: any) => {
                 disabled={savingPassword}
               >
                 {savingPassword ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ActivityIndicator size="small" color={colors.white} />
                 ) : (
-                  <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Salvar</Text>
+                  <Text style={[styles.modalButtonText, { color: colors.white }]}>Salvar</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -796,7 +874,7 @@ export const ProfileScreen = ({ navigation }: any) => {
                 style={[styles.shareButton, { backgroundColor: colors.primary, marginTop: 16 }]}
                 onPress={handleShareProfile}
               >
-                <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>📤 Copiar Link de Compartilhamento</Text>
+                <Text style={{ color: colors.white, fontWeight: '600' }}>📤 Copiar Link de Compartilhamento</Text>
               </TouchableOpacity>
             )}
 
@@ -838,8 +916,13 @@ export const ProfileScreen = ({ navigation }: any) => {
               <TouchableOpacity
                 style={[styles.clearButton, { backgroundColor: colors.error }]}
                 onPress={handleClearCache}
+                disabled={clearingCache}
               >
-                <Text style={{ color: '#FFFFFF', fontSize: 14 }}>Limpar</Text>
+                {clearingCache ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Text style={{ color: colors.white, fontSize: 14 }}>Limpar</Text>
+                )}
               </TouchableOpacity>
             </View>
 
@@ -1040,7 +1123,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: OVERLAY_COLORS.modalBackdrop,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,

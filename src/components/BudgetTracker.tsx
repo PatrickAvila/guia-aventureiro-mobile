@@ -9,11 +9,11 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
 import { useColors } from '../hooks/useColors';
+import { showAlert } from './CustomAlert';
 
 // Função utilitária para formatar valor como Real brasileiro
 function formatBRL(value: number | string) {
@@ -28,7 +28,6 @@ function maskBRLInput(text: string) {
   const num = Number(cleaned) / 100;
   return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
-import { showAlert } from './CustomAlert';
 
 interface Expense {
   _id: string;
@@ -130,19 +129,20 @@ export const BudgetTracker: React.FC<BudgetTrackerProps> = ({
   };
 
   const handleDeleteExpense = (expense: Expense) => {
-    Alert.alert(
-      'Deletar Gasto',
-      `Tem certeza que deseja deletar "${expense.description}"?`,
+    showAlert(
+      'Remover gasto',
+      `Tem certeza que deseja remover "${expense.description}"? Essa ação não poderá ser desfeita.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Deletar',
+          text: 'Remover',
           style: 'destructive',
           onPress: async () => {
             try {
               await onDeleteExpense(expense._id);
+              showAlert('Gasto removido', 'O gasto foi removido com sucesso.');
             } catch (error: any) {
-              showAlert('Erro', 'Não foi possível deletar o gasto');
+              showAlert('Não foi possível remover', 'Não conseguimos remover esse gasto agora. Tente novamente.');
             }
           },
         },
@@ -298,7 +298,7 @@ export const BudgetTracker: React.FC<BudgetTrackerProps> = ({
                       <Text
                         style={[
                           styles.categoryLabel,
-                          { color: selectedCategory === cat.id ? '#FFFFFF' : colors.text },
+                          { color: selectedCategory === cat.id ? colors.white : colors.text },
                         ]}
                       >
                         {cat.label}
@@ -347,9 +347,9 @@ export const BudgetTracker: React.FC<BudgetTrackerProps> = ({
                   disabled={loading}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <ActivityIndicator color={colors.white} size="small" />
                   ) : (
-                    <Text style={styles.submitButtonText}>Adicionar</Text>
+                    <Text style={[styles.submitButtonText, { color: colors.white }]}>Adicionar</Text>
                   )}
                 </TouchableOpacity>
               </View>

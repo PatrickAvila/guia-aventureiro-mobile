@@ -8,7 +8,6 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
-  Alert,
   Modal,
   ScrollView,
 } from 'react-native';
@@ -18,7 +17,13 @@ import api from '../services/api';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useColors } from '../hooks/useColors';
+import {
+  NOTIFICATION_PRIORITY_COLORS,
+  NOTIFICATION_TYPE_COLORS,
+  OVERLAY_COLORS,
+} from '../constants/colors';
 import { useNotificationsContext } from '../contexts/NotificationsContext';
+import { showAlert } from '../components/CustomAlert';
 
 interface Notification {
   _id: string;
@@ -141,7 +146,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
       // setUnreadCount(response.data.unreadCount);
     } catch (error) {
       console.error('Erro ao carregar alertas:', error);
-      Alert.alert('Erro', 'Não foi possível carregar os alertas');
+      showAlert('Não foi possível carregar', 'Não conseguimos carregar seus alertas agora. Tente novamente em instantes.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -192,21 +197,21 @@ export const NotificationsScreen = ({ navigation }: any) => {
       // Atualiza array mock
       MOCK_NOTIFICATIONS.forEach(n => n.read = true);
       
-      Alert.alert('Sucesso', 'Todos os alertas foram marcados como lidos');
+      showAlert('Tudo certo', 'Todos os alertas foram marcados como lidos.');
       // ==========================================
       
       // Código original comentado:
       // await api.put('/notifications/read-all');
     } catch (error) {
       console.error('Erro ao marcar todas como lidas:', error);
-      Alert.alert('Erro', 'Não foi possível marcar todas como lidas');
+      showAlert('Não foi possível concluir', 'Não conseguimos marcar todos os alertas como lidos agora. Tente novamente.');
     }
   };
 
   const deleteNotification = async (id: string) => {
-    Alert.alert(
-      'Excluir Alerta',
-      'Deseja realmente excluir este alerta?',
+    showAlert(
+      'Excluir alerta',
+      'Deseja realmente excluir este alerta? Essa ação não poderá ser desfeita.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -215,21 +220,19 @@ export const NotificationsScreen = ({ navigation }: any) => {
           onPress: async () => {
             try {
               // ========== USANDO DADOS MOCKADOS ==========
-              // Atualiza estado local
+              // Atualiza estado local (única fonte de verdade)
               setNotifications((prev) => prev.filter((n) => n._id !== id));
-              
-              // Remove do array mock
-              const notifIndex = MOCK_NOTIFICATIONS.findIndex(n => n._id === id);
-              if (notifIndex !== -1) {
-                MOCK_NOTIFICATIONS.splice(notifIndex, 1);
-              }
+
+              showAlert('Alerta excluído', 'O alerta foi removido com sucesso.');
               // ==========================================
+              // Nota: Não mutamos MOCK_NOTIFICATIONS diretamente
+              // O state do React é a única fonte de verdade
               
               // Código original comentado:
               // await api.delete(`/notifications/${id}`);
             } catch (error) {
               console.error('Erro ao excluir alerta:', error);
-              Alert.alert('Erro', 'Não foi possível excluir o alerta');
+              showAlert('Não foi possível excluir', 'Não conseguimos excluir este alerta agora. Tente novamente.');
             }
           },
         },
@@ -283,26 +286,15 @@ export const NotificationsScreen = ({ navigation }: any) => {
   };
 
   const getNotificationColor = (priority?: string, type?: string) => {
-    // Cores específicas por tipo de notificação
-    const typeColors: Record<string, string> = {
-      itinerary_shared: '#34C759',      // Verde (compartilhamento)
-      itinerary_reminder: '#007AFF',    // Azul (lembrete)
-      budget_alert: '#FF9500',          // Laranja (alerta)
-      collaboration: '#5856D6',         // Roxo (colaboração)
-      ai_suggestion: '#AF52DE',         // Lilás (IA)
-      premium: '#FFD700',               // Dourado (premium)
-      system: '#8E8E93',                // Cinza (sistema)
-    };
-    
-    // Se tiver cor específica para o tipo, usa ela
-    if (type && typeColors[type]) {
-      return typeColors[type];
+    if (type && NOTIFICATION_TYPE_COLORS[type]) {
+      return NOTIFICATION_TYPE_COLORS[type];
     }
-    
-    // Senão, usa por prioridade
-    if (priority === 'high') return '#FF3B30';
-    if (priority === 'medium') return '#FF9500';
-    return '#007AFF';
+
+    if (priority && NOTIFICATION_PRIORITY_COLORS[priority]) {
+      return NOTIFICATION_PRIORITY_COLORS[priority];
+    }
+
+    return colors.primary;
   };
 
   const renderNotification = ({ item }: { item: Notification }) => (
@@ -312,7 +304,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
       onLongPress={() => deleteNotification(item._id)}
     >
       <View style={[styles.iconContainer, { backgroundColor: getNotificationColor(item.priority, item.type) }]}>
-        <Ionicons name={getNotificationIcon(item.type) as any} size={24} color="#FFF" />
+        <Ionicons name={getNotificationIcon(item.type) as any} size={24} color={colors.white} />
       </View>
       <View style={styles.contentContainer}>
         <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
@@ -353,7 +345,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
           style={[styles.filterButton, filter === 'all' && { backgroundColor: colors.primary }]}
           onPress={() => setFilter('all')}
         >
-          <Text style={[styles.filterText, { color: filter === 'all' ? '#FFF' : colors.textSecondary }]}>
+          <Text style={[styles.filterText, { color: filter === 'all' ? colors.white : colors.textSecondary }]}>
             Todas
           </Text>
         </TouchableOpacity>
@@ -361,7 +353,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
           style={[styles.filterButton, filter === 'unread' && { backgroundColor: colors.primary }]}
           onPress={() => setFilter('unread')}
         >
-          <Text style={[styles.filterText, { color: filter === 'unread' ? '#FFF' : colors.textSecondary }]}>
+          <Text style={[styles.filterText, { color: filter === 'unread' ? colors.white : colors.textSecondary }]}>
             Não lidas ({unreadCount})
           </Text>
         </TouchableOpacity>
@@ -389,10 +381,10 @@ export const NotificationsScreen = ({ navigation }: any) => {
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: OVERLAY_COLORS.modalBackdrop }]}>
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             {/* Header do Modal */}
-            <View style={styles.modalHeader}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}> 
               <Text style={[styles.modalTitle, { color: colors.text }]}>Alerta</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
                 <Ionicons name="close" size={28} color={colors.text} />
@@ -405,7 +397,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
                 {/* Ícone e Título */}
                 <View style={styles.modalIconRow}>
                   <View style={[styles.modalIconContainer, { backgroundColor: getNotificationColor(selectedNotification.priority, selectedNotification.type) }]}>
-                    <Ionicons name={getNotificationIcon(selectedNotification.type) as any} size={32} color="#FFF" />
+                    <Ionicons name={getNotificationIcon(selectedNotification.type) as any} size={32} color={colors.white} />
                   </View>
                   <Text style={[styles.modalNotificationTitle, { color: colors.text }]}>
                     {selectedNotification.title}
@@ -431,7 +423,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
                     style={[styles.actionButton, { backgroundColor: colors.primary }]}
                     onPress={handleNavigateToAction}
                   >
-                    <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                    <Ionicons name="arrow-forward" size={20} color={colors.white} />
                     <Text style={styles.actionButtonText}>Ver Roteiro</Text>
                   </TouchableOpacity>
                 )}

@@ -13,7 +13,8 @@ import {
   ActivityIndicator,
   Pressable,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  InteractionManager
 } from 'react-native';
 import { showAlert } from './CustomAlert';
 import { useColors } from '../hooks/useColors';
@@ -88,7 +89,11 @@ export const RatingModal: React.FC<RatingModalProps> = ({
 
   const handleSubmit = async () => {
     if (score === 0) {
-      showAlert('Atenção', 'Por favor, selecione uma nota');
+      // Close modal first to prevent modal/alert overlay deadlock
+      onClose();
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Atenção', 'Por favor, selecione uma nota');
+      });
       return;
     }
 
@@ -97,7 +102,11 @@ export const RatingModal: React.FC<RatingModalProps> = ({
       await onSubmit({ score, comment, photos, highlights, wouldRecommend });
       onClose();
     } catch (error) {
-      showAlert('Erro', 'Não foi possível salvar a avaliação');
+      // Close modal first to prevent modal/alert overlay deadlock
+      onClose();
+      InteractionManager.runAfterInteractions(() => {
+        showAlert('Erro', 'Não foi possível salvar a avaliação');
+      });
     } finally {
       setLoading(false);
     }

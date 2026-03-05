@@ -11,6 +11,11 @@ interface UploadResult {
   publicId: string;
 }
 
+interface DeletePhotoResult {
+  success: boolean;
+  message: string;
+}
+
 class PhotoService {
   /**
    * Solicita permissões de câmera e galeria
@@ -214,6 +219,61 @@ class PhotoService {
     }
 
     return results;
+  }
+
+  /**
+   * Remove foto de um roteiro de forma persistente
+   */
+  async deletePhoto(photoUrl: string, itineraryId?: string): Promise<DeletePhotoResult> {
+    try {
+      if (!photoUrl || !itineraryId) {
+        return {
+          success: false,
+          message: 'Não foi possível identificar a foto para remoção.',
+        };
+      }
+
+      const token = await AsyncStorage.getItem('accessToken');
+      const response = await fetch(`${env.apiUrl}/upload`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          itineraryId,
+          photoUrl,
+        }),
+      });
+
+      if (!response.ok) {
+        let errorData: any;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          // Se JSON parse falhar, usar resposta padrão
+          console.warn('Não foi possível parsear resposta de erro da API');
+          errorData = { message: 'Erro ao remover foto (resposta indefinida)' };
+        }
+        const message = errorData?.message || 'Erro ao remover foto';
+        return {
+          success: false,
+          message,
+        };
+      }
+
+      await analyticsService.logPhotoDelete(photoUrl);
+      return {
+        success: true,
+        message: 'Foto removida com sucesso.',
+      };
+    } catch (error) {
+      console.error('Erro ao deletar foto:', error);
+      return {
+        success: false,
+        message: 'Não foi possível remover a foto agora. Tente novamente em instantes.',
+      };
+    }
   }
 
   /**

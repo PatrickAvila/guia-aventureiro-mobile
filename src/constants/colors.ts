@@ -40,3 +40,34 @@ export const DarkColors = {
 
 // Exporta o tema padrão (será sobrescrito pelo hook useColors)
 export const Colors = LightColors;
+
+export const CATEGORY_COLORS: Record<string, string> = {
+  hospedagem: '#FF6B6B',
+  alimentacao: '#4ECDC4',
+  transporte: '#FFE66D',
+  passeios: '#95E1D3',
+  atracao: '#95E1D3',
+  compras: '#F38181',
+  outros: '#AA96DA',
+  outro: '#AA96DA',
+};
+
+export const NOTIFICATION_TYPE_COLORS: Record<string, string> = {
+  itinerary_shared: '#34C759',
+  itinerary_reminder: '#007AFF',
+  budget_alert: '#FF9500',
+  collaboration: '#5856D6',
+  ai_suggestion: '#AF52DE',
+  premium: '#FFD700',
+  system: '#8E8E93',
+};
+
+export const NOTIFICATION_PRIORITY_COLORS: Record<string, string> = {
+  high: '#FF3B30',
+  medium: '#FF9500',
+  low: '#007AFF',
+};
+
+export const OVERLAY_COLORS = {
+  modalBackdrop: 'rgba(0,0,0,0.5)',
+};

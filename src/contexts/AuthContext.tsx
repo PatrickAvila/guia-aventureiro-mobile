@@ -53,8 +53,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAccessToken(accessToken);
       await new Promise(resolve => setTimeout(resolve, 1500));
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Erro ao criar conta. Tente novamente.';
-      showAlert('Erro', message);
+      // Don't expose server error messages to user
+      const status = error.response?.status;
+      let userMessage = 'Erro ao criar conta. Tente novamente.';
+      
+      if (status === 409) {
+        userMessage = 'Este email já está registrado.';
+      } else if (status === 400) {
+        userMessage = 'Dados inválidos. Verifique os campos.';
+      } else if (status === 429) {
+        userMessage = 'Muitas tentativas. Aguarde alguns minutos.';
+      }
+      
+      showAlert('Erro', userMessage);
       throw error;
     } finally {
       setIsTransitioning(false);
@@ -69,8 +80,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAccessToken(accessToken);
       await new Promise(resolve => setTimeout(resolve, 1500));
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Erro ao fazer login. Tente novamente.';
-      showAlert('Erro', message);
+      // Don't expose server error messages to user (prevents user enumeration)
+      const status = error.response?.status;
+      let userMessage = 'Erro ao fazer login. Tente novamente.';
+      
+      if (status === 401) {
+        userMessage = 'Credenciais inválidas.';
+      } else if (status === 429) {
+        userMessage = 'Muitas tentativas. Aguarde alguns minutos.';
+      } else if (status === 503) {
+        userMessage = 'Serviço indisponível. Tente novamente mais tarde.';
+      }
+      
+      showAlert('Erro', userMessage);
       throw error;
     } finally {
       setIsTransitioning(false);
@@ -85,7 +107,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setAccessToken(null);
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+      // Logout failed but continue anyway (don't expose error details)
+      if (__DEV__) {
+        console.error('❌ Logout failed');
+      }
     } finally {
       setIsTransitioning(false);
     }
@@ -96,7 +121,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profile = await authService.getProfile();
       setUser(profile);
     } catch (error) {
-      console.error('Erro ao atualizar perfil:', error);
+      // Profile refresh failed but don't expose details
+      if (__DEV__) {
+        console.error('❌ Profile refresh failed');
+      }
     }
   }, []);
 
@@ -106,7 +134,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(updatedUser);
       return updatedUser;
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Erro ao atualizar perfil.';
+      // Don't expose server error messages
+      const status = error.response?.status;
+      let message = 'Erro ao atualizar perfil. Tente novamente.';
+      
+      if (status === 400) {
+        message = 'Dados inválidos.';
+      } else if (status === 413) {
+        message = 'Foto muito grande. Use uma imagem menor.';
+      }
+      
       throw new Error(message);
     }
   }, []);

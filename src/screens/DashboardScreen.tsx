@@ -232,7 +232,7 @@ export const DashboardScreen = ({ navigation }: any) => {
           style={[styles.createButton, { backgroundColor: colors.primary }]}
           onPress={handleCreateItinerary}
         >
-          <Text style={[styles.createButtonText, { color: '#FFFFFF' }]}>Criar roteiro</Text>
+          <Text style={[styles.createButtonText, { color: colors.white }]}>Criar roteiro</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -346,7 +346,7 @@ export const DashboardScreen = ({ navigation }: any) => {
               <Text
                 style={[
                   styles.filterLabel,
-                  { color: statusFilter === option.value ? '#FFFFFF' : colors.textSecondary },
+                  { color: statusFilter === option.value ? colors.white : colors.textSecondary },
                 ]}
               >
                 {option.label}

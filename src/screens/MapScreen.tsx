@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useColors } from '../hooks/useColors';
+import { CATEGORY_COLORS } from '../constants/colors';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import mapService, { ItineraryMapData, DayMapData, MapPoint } from '../services/mapService';
@@ -21,17 +22,6 @@ const { width, height } = Dimensions.get('window');
 const ASPECT_RATIO = width / height;
 const LATITUDE_DELTA = 0.0922;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
-
-const CATEGORY_COLORS: { [key: string]: string } = {
-  hospedagem: '#FF6B6B',
-  alimentacao: '#4ECDC4',
-  transporte: '#FFE66D',
-  passeios: '#95E1D3',
-  atracao: '#95E1D3',
-  compras: '#F38181',
-  outros: '#AA96DA',
-  outro: '#AA96DA',
-};
 
 const CATEGORY_ICONS: { [key: string]: string } = {
   hospedagem: '🏨',
@@ -57,6 +47,7 @@ export const MapScreen = ({ route, navigation }: any) => {
   const mapRef = useRef<MapView>(null);
 
   const loadMapData = useCallback(async () => {
+    let isMounted = true;
     try {
       setLoading(true);
       let data;
@@ -67,23 +58,32 @@ export const MapScreen = ({ route, navigation }: any) => {
         data = await mapService.getDayMap(itineraryId, dayNumber);
       }
       
+      if (!isMounted) return; // Cleanup: componente foi desmontado
       setMapData(data);
       
-      // Centralizar mapa
+      // Centralizar mapa com cleanup de timeout
       if (data && data.center && mapRef.current) {
-        setTimeout(() => {
-          mapRef.current?.animateToRegion({
-            latitude: data.center.lat,
-            longitude: data.center.lng,
-            latitudeDelta: LATITUDE_DELTA,
-            longitudeDelta: LONGITUDE_DELTA,
-          }, 1000);
+        const timer = setTimeout(() => {
+          if (isMounted && mapRef.current) {
+            mapRef.current.animateToRegion({
+              latitude: data.center.lat,
+              longitude: data.center.lng,
+              latitudeDelta: LATITUDE_DELTA,
+              longitudeDelta: LONGITUDE_DELTA,
+            }, 1000);
+          }
         }, 500);
+        
+        // Cleanup: foi criado timer
       }
     } catch (error: any) {
-      showError(error.message || 'Erro ao carregar mapa');
+      if (isMounted) {
+        showError(error.message || 'Erro ao carregar mapa');
+      }
     } finally {
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
     }
   }, [itineraryId, dayNumber, showFullMap]);
 
@@ -112,7 +112,7 @@ export const MapScreen = ({ route, navigation }: any) => {
           pinColor={color}
           onPress={() => setSelectedPoint(point)}
         >
-          <View style={[styles.markerContainer, { backgroundColor: color }]}>
+          <View style={[styles.markerContainer, { backgroundColor: color, borderColor: colors.white }]}>
             <Text style={styles.markerNumber}>{index + 1}</Text>
           </View>
         </Marker>
@@ -226,7 +226,7 @@ export const MapScreen = ({ route, navigation }: any) => {
             ]}
             onPress={() => setShowFullMap(!showFullMap)}
           >
-            <Text style={[styles.toggleText, { color: showFullMap ? '#FFF' : colors.text }]}>
+            <Text style={[styles.toggleText, { color: showFullMap ? colors.white : colors.text }]}>
               {showFullMap ? 'Ver Todos os Dias' : `Ver Dia ${dayNumber}`}
             </Text>
           </TouchableOpacity>
@@ -254,7 +254,7 @@ export const MapScreen = ({ route, navigation }: any) => {
       </MapView>
 
       {/* Statistics Panel */}
-      <View style={[styles.statsPanel, { backgroundColor: colors.card }]}>
+      <View style={[styles.statsPanel, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
         <View style={styles.statItem}>
           <Text style={{ fontSize: 20 }}>📍</Text>
           <Text style={[styles.statValue, { color: colors.text }]}>{stats.totalPoints}</Text>
@@ -385,7 +385,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#FFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -402,7 +401,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
   },
   statItem: {
     flex: 1,

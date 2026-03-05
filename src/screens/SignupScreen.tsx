@@ -83,8 +83,10 @@ export const SignupScreen = ({ navigation }: any) => {
     setLoading(true);
     try {
       await signup(name.trim(), email.trim(), password);
-    } catch (error) {
-      // Erro já tratado no AuthContext
+    } catch (error: any) {
+      // AuthContext trata autenticação, mas reseta loading aqui também
+      console.error('Erro no signup screen:', error?.message || error);
+      // State local de loading é resetado no finally abaixo
     } finally {
       setLoading(false);
     }

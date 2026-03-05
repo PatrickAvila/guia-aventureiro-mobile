@@ -20,7 +20,7 @@ import { MapScreen } from '../screens/MapScreen';
 import { NotificationSettingsScreen } from '../screens/NotificationSettingsScreen';
 import { PricingScreen } from '../screens/PricingScreen';
 import { UsageScreen } from '../screens/UsageScreen';
-import UpgradeScreen from '../screens/UpgradeScreen';
+import UpgradeWebviewScreen from '../screens/UpgradeWebviewScreen';
 import { useNotifications } from '../hooks/useNotifications';
 
 const Tab = createBottomTabNavigator();
@@ -42,6 +42,7 @@ const DashboardStack = () => {
       <Stack.Screen name="Map" component={MapScreen} />
       <Stack.Screen name="Pricing" component={PricingScreen} />
       <Stack.Screen name="Usage" component={UsageScreen} />
+      <Stack.Screen name="UpgradeWebview" component={UpgradeWebviewScreen} />
     </Stack.Navigator>
   );
 };
@@ -61,6 +62,7 @@ const GenerateStack = () => {
       <Stack.Screen name="Map" component={MapScreen} />
       <Stack.Screen name="Pricing" component={PricingScreen} />
       <Stack.Screen name="Usage" component={UsageScreen} />
+      <Stack.Screen name="UpgradeWebview" component={UpgradeWebviewScreen} />
     </Stack.Navigator>
   );
 };
@@ -75,7 +77,7 @@ const ProfileStack = () => {
       }}
     >
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />
-      <Stack.Screen name="Upgrade" component={UpgradeScreen} />
+      <Stack.Screen name="UpgradeWebview" component={UpgradeWebviewScreen} />
       <Stack.Screen name="EditPreferences" component={EditPreferencesScreen} />
       <Stack.Screen name="Achievements" component={AchievementsScreen} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
@@ -101,6 +103,7 @@ const ExploreStack = () => {
       <Stack.Screen name="Map" component={MapScreen} />
       <Stack.Screen name="Pricing" component={PricingScreen} />
       <Stack.Screen name="Usage" component={UsageScreen} />
+      <Stack.Screen name="UpgradeWebview" component={UpgradeWebviewScreen} />
     </Stack.Navigator>
   );
 };
@@ -118,6 +121,7 @@ const NotificationsStack = () => {
       <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} />
       <Stack.Screen name="Pricing" component={PricingScreen} />
       <Stack.Screen name="Usage" component={UsageScreen} />
+      <Stack.Screen name="UpgradeWebview" component={UpgradeWebviewScreen} />
     </Stack.Navigator>
   );
 };

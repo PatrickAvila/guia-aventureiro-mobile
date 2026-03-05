@@ -42,9 +42,9 @@ export const Button: React.FC<ButtonProps> = ({
 
   const textStyleCombined = [
     styles.buttonText,
-    { color: '#FFFFFF' },
+    { color: colors.white },
     variant === 'outline' && { color: colors.primary },
-    variant === 'accent' && { color: '#FFFFFF' },
+    variant === 'accent' && { color: colors.white },
     textStyle,
   ];
 
@@ -56,7 +56,7 @@ export const Button: React.FC<ButtonProps> = ({
       activeOpacity={0.7}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'outline' ? colors.primary : '#FFFFFF'} />
+        <ActivityIndicator color={variant === 'outline' ? colors.primary : colors.white} />
       ) : (
         <Text style={textStyleCombined}>{title}</Text>
       )}

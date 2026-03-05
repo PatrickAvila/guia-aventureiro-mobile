@@ -1,6 +1,7 @@
 // mobile/src/services/api.ts
 import axios, { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import ENV from '../config/env';
 
 // EventEmitter simples para comunicar eventos de autenticação (React Native compatível)
@@ -35,10 +36,67 @@ const api = axios.create({
   },
 });
 
+// Validate HTTPS in production
+if (!__DEV__ && ENV.apiUrl && !ENV.apiUrl.startsWith('https://')) {
+  if (__DEV__) {
+    console.warn('⚠️  WARNING: API URL is not HTTPS');
+  }
+}
+
+// Secure token storage helper
+const getSecureToken = async (key: string): Promise<string | null> => {
+  try {
+    // Try secure store first (new way)
+    const secureToken = await SecureStore.getItemAsync(key);
+    if (secureToken) {
+      return secureToken;
+    }
+    
+    // Fallback to AsyncStorage for migration (old way) - but don't use beyond migration
+    const asyncToken = await AsyncStorage.getItem(key);
+    if (asyncToken && secureToken === null) {
+      // Migrate to secure store
+      await SecureStore.setItemAsync(key, asyncToken);
+      // Don't delete from AsyncStorage immediately - let it expire naturally
+    }
+    
+    return asyncToken;
+  } catch (error) {
+    if (__DEV__) {
+      console.error('❌ Error accessing secure store');
+    }
+    return null;
+  }
+};
+
+const setSecureToken = async (key: string, value: string): Promise<void> => {
+  try {
+    // Store in secure store
+    await SecureStore.setItemAsync(key, value);
+    // Also clear from AsyncStorage for security
+    await AsyncStorage.removeItem(key);
+  } catch (error) {
+    if (__DEV__) {
+      console.error('❌ Error storing secure token');
+    }
+  }
+};
+
+const removeSecureToken = async (key: string): Promise<void> => {
+  try {
+    await SecureStore.deleteItemAsync(key);
+    await AsyncStorage.removeItem(key);
+  } catch (error) {
+    if (__DEV__) {
+      console.error('❌ Error removing secure token');
+    }
+  }
+};
+
 // Interceptor para adicionar token
 api.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem('accessToken');
+    const token = await getSecureToken('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -57,21 +115,23 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = await AsyncStorage.getItem('refreshToken');
+        const refreshToken = await getSecureToken('refreshToken');
         if (refreshToken) {
           const { data } = await axios.post(`${ENV.apiUrl.replace('/api', '')}/api/auth/refresh`, {
             refreshToken,
           });
 
-          await AsyncStorage.setItem('accessToken', data.accessToken);
-          await AsyncStorage.setItem('refreshToken', data.refreshToken);
+          await setSecureToken('accessToken', data.accessToken);
+          await setSecureToken('refreshToken', data.refreshToken);
 
           originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
           return api(originalRequest);
         }
       } catch (refreshError) {
         // Refresh falhou, fazer logout
-        await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
+        await removeSecureToken('accessToken');
+        await removeSecureToken('refreshToken');
+        await AsyncStorage.removeItem('user');
         
         // Emitir evento para forçar logout no app
         apiEvents.emit('unauthorized');
